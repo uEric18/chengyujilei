@@ -17,7 +17,6 @@
     min-height: 100vh; min-height: 100dvh;
     display: flex; justify-content: center;
     -webkit-tap-highlight-color: transparent;
-    -webkit-user-select: none; user-select: none;
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
   .app {
@@ -150,8 +149,8 @@
   </div>
   <div class="content hidden" id="tab-import">
     <div class="import-area">
-      <textarea id="importText" placeholder="每行一条，格式：成语 释义&#10;例如：&#10;望其项背 能够望见别人的颈项和背脊，表示赶得上或比得上&#10;差强人意 大体上还能使人满意"></textarea>
-      <div class="tip">支持空格、冒号、制表符分隔 · 已有 <strong id="importCount">0</strong> 条</div>
+      <textarea id="importText" placeholder="每行一条。可只写成语名，自动补释义&#10;例如：&#10;望其项背 能够望见别人的颈项和背脊，表示赶得上或比得上&#10;差强人意&#10;不刊之论"></textarea>
+      <div class="tip">只写成语名会自动从词典补释义 · 已有 <strong id="importCount">0</strong> 条</div>
       <div class="btn-row">
         <button class="btn primary" id="btnImport">导入并替换</button>
         <button class="btn secondary" id="btnAppend">追加导入</button>
@@ -215,8 +214,28 @@ function parseImport(text) {
     if (!trimmed) continue;
     const parts = trimmed.split(/[：:：\s\t]+/);
     if (parts.length >= 2) {
+      // 有分隔符：成语 + 释义
       const word = parts[0], meaning = parts.slice(1).join('');
       if (word && meaning) result.push([word, meaning]);
+    } else {
+      // 单行只有成语名 → 自动查词典补释义
+      const word = trimmed;
+      if (word.length >= 2) {
+        // 先查精品词典
+        if (IDIOM_DICT[word]) {
+          result.push([word, IDIOM_DICT[word][1]]);
+        }
+        // 再查扩展词典（已加载的话）
+        else if (IDIOM_DICT_COMPACT) {
+          const entry = IDIOM_DICT_COMPACT.find(e => e[0] === word);
+          if (entry) result.push([word, entry[2]]);
+          else result.push([word, '（待补充释义）']);
+        }
+        // 都没加载 → 标记待补充
+        else {
+          result.push([word, '（待补充释义）']);
+        }
+      }
     }
   }
   return result;

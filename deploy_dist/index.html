@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>成语积累</title>
+<style>
+  :root {
+    --blue: #007AFF; --red: #FF3B30; --green: #34C759;
+    --gray: #8E8E93; --bg: #F2F2F7; --card: #FFFFFF;
+    --separator: #E5E5EA; --text: #1C1C1E; --text2: #3C3C43; --text3: #8E8E93;
+  }
+  [data-theme="dark"] {
+    --blue: #0A84FF; --red: #FF453A; --green: #30D158;
+    --gray: #636366; --bg: #1C1C1E; --card: #2C2C2E;
+    --separator: #38383A; --text: #FFFFFF; --text2: #E5E5EA; --text3: #8E8E93;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "PingFang SC", "SF Pro Text", "Helvetica Neue", sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh; min-height: 100dvh;
+    display: flex; justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .app {
+    width: 100%; max-width: 480px;
+    display: flex; flex-direction: column;
+    min-height: 100vh; min-height: 100dvh;
+  }
+  .topbar { padding: 48px 20px 0; text-align: center; }
+  .topbar h1 { font-size: 34px; font-weight: 700; letter-spacing: 6px; color: var(--text); }
+  .topbar .stats { font-size: 13px; color: var(--text3); margin-top: 4px; font-weight: 500; }
+  .segmented { display: flex; margin: 20px 20px 0; background: #E5E5EA; border-radius: 8px; padding: 2px; }
+  .segment { flex: 1; text-align: center; padding: 7px 0; font-size: 13px; font-weight: 500; color: var(--text); border-radius: 7px; cursor: pointer; transition: .2s; }
+  .segment.active { background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 0 0 .5px rgba(0,0,0,.04); }
+  .content { flex: 1; padding: 24px 20px; display: flex; flex-direction: column; gap: 20px; }
+  .card-wrap { perspective: 800px; flex: 1; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .card { position: relative; width: 100%; aspect-ratio: 4/3; max-height: 280px; transition: transform .5s cubic-bezier(.4,0,.2,1); transform-style: preserve-3d; }
+  .card.flipped { transform: rotateY(180deg); }
+  .card-face { position: absolute; inset: 0; backface-visibility: hidden; border-radius: 20px; background: var(--card); box-shadow: 0 2px 16px rgba(0,0,0,.06); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 28px; border: .5px solid rgba(0,0,0,.04); }
+  .card-back { transform: rotateY(180deg); }
+  .card .idiom { font-size: 44px; letter-spacing: 10px; font-weight: 700; color: var(--text); }
+  .card .meaning { font-size: 17px; line-height: 1.65; color: var(--text2); text-align: center; font-weight: 400; }
+  .card .hint { font-size: 12px; color: var(--text3); margin-top: 20px; font-weight: 500; }
+  .progress-wrap { padding: 0 20px; }
+  .progress-bar { height: 4px; background: #E5E5EA; border-radius: 2px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--blue); transition: width .4s cubic-bezier(.4,0,.2,1); border-radius: 2px; }
+  .btn-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; padding: 0 20px; }
+  .btn { padding: 12px 22px; border-radius: 20px; border: none; font-size: 15px; font-weight: 500; cursor: pointer; transition: all .18s; font-family: inherit; letter-spacing: .5px; }
+  .btn:active { transform: scale(.96); opacity: .85; }
+  .btn.primary { background: var(--blue); color: #fff; }
+  .btn.secondary { background: #E5E5EA; color: var(--text); }
+  .btn.danger { background: none; color: var(--red); padding: 6px 16px; }
+  .btn.text { background: none; color: var(--blue); padding: 6px 16px; }
+  .btn:disabled { opacity: .35; pointer-events: none; }
+  .quiz .question { text-align: center; margin-bottom: 24px; }
+  .quiz .question .big { font-size: 40px; font-weight: 700; letter-spacing: 8px; display: block; margin-bottom: 8px; }
+  .quiz .question .sub { font-size: 15px; color: var(--text3); }
+  .quiz .options { display: flex; flex-direction: column; gap: 10px; }
+  .quiz .option { padding: 15px 18px; border-radius: 14px; cursor: pointer; background: #fff; font-size: 15px; line-height: 1.5; border: 1.5px solid transparent; transition: .15s; box-shadow: 0 1px 4px rgba(0,0,0,.03); }
+  .quiz .option:active { transform: scale(.98); }
+  .quiz .option.correct { border-color: var(--green); background: #F0FFF4; }
+  .quiz .option.wrong { border-color: var(--red); background: #FFF5F5; }
+  .quiz .feedback { text-align: center; font-size: 15px; margin-top: 18px; min-height: 24px; }
+  .quiz .loading { color: var(--text3); font-size: 13px; text-align: center; padding: 20px 0; }
+  .quiz .loading .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #E5E5EA; border-top-color: var(--blue); border-radius: 50%; animation: spin .6s linear infinite; vertical-align: middle; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .import-area { display: flex; flex-direction: column; gap: 12px; }
+  .import-area textarea { width: 100%; height: 200px; border: 1.5px solid #E5E5EA; border-radius: 14px; padding: 14px 16px; font-family: inherit; font-size: 14px; line-height: 1.7; resize: vertical; background: #fff; color: var(--text); -webkit-user-select: text; user-select: text; }
+  .import-area textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,122,255,.1); }
+  .import-area textarea::placeholder { color: #C7C7CC; }
+  .import-area .tip { font-size: 13px; color: var(--text3); text-align: center; }
+  /* ── Dictionary / Search ── */
+  .search-wrap { display: flex; flex-direction: column; gap: 16px; }
+  .search-box { display: flex; gap: 8px; }
+  .search-box input { flex: 1; padding: 12px 16px; border: 1.5px solid #E5E5EA; border-radius: 14px; font-size: 16px; font-family: inherit; background: #fff; color: var(--text); -webkit-user-select: text; user-select: text; }
+  .search-box input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,122,255,.1); }
+  .search-box input::placeholder { color: #C7C7CC; }
+  .search-box .btn { white-space: nowrap; }
+  .dict-card { background: #fff; border-radius: 16px; padding: 20px; box-shadow: 0 1px 6px rgba(0,0,0,.04); }
+  .dict-card .word-title { font-size: 24px; font-weight: 700; letter-spacing: 4px; margin-bottom: 4px; }
+  .dict-card .pinyin { font-size: 14px; color: var(--text3); margin-bottom: 16px; }
+  .dict-card .section { margin-bottom: 14px; }
+  .dict-card .section:last-child { margin-bottom: 0; }
+  .dict-card .label { font-size: 12px; font-weight: 600; color: var(--blue); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; }
+  .dict-card .text { font-size: 15px; line-height: 1.6; color: var(--text2); }
+  .dict-card .text.source { font-family: "Noto Serif SC", "STSong", "SimSun", serif; color: #666; font-size: 14px; }
+  .dict-card .tag-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .dict-card .tag { display: inline-block; padding: 4px 10px; border-radius: 10px; font-size: 13px; background: #F2F2F7; color: var(--text2); }
+  .dict-card .tag.syn { background: #E8F5E9; color: #2E7D32; }
+  .dict-card .tag.ant { background: #FFF3E0; color: #E65100; }
+  .search-hint { text-align: center; color: var(--text3); font-size: 14px; padding: 32px 0; }
+  .badge { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 8px; margin-left: 4px; vertical-align: middle; }
+  .badge.online { background: #E8F5E9; color: #34C759; }
+  .badge.offline { background: #FFF3E0; color: #FF9500; }
+  /* ── Theme toggle ── */
+  .theme-btn { position: absolute; top: 48px; right: 20px; width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid var(--separator); background: var(--card); font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: .2s; }
+  .theme-btn:active { transform: scale(.9); }
+  /* ── Search suggestions ── */
+  .suggestions-wrap { position: relative; }
+  .suggestions { position: absolute; top: 100%; left: 0; right: 0; z-index: 10; background: var(--card); border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,.12); max-height: 320px; overflow-y: auto; display: none; margin-top: 4px; }
+  .suggestions.show { display: block; }
+  .suggestions .item { padding: 11px 16px; cursor: pointer; font-size: 15px; border-bottom: .5px solid var(--separator); display: flex; justify-content: space-between; align-items: center; }
+  .suggestions .item:last-child { border-bottom: none; }
+  .suggestions .item:hover, .suggestions .item.active { background: rgba(0,122,255,.08); }
+  .suggestions .item .word { font-weight: 600; color: var(--text); }
+  .suggestions .item .py { font-size: 12px; color: var(--text3); }
+  /* ── Search history ── */
+  .history-wrap { margin-top: 12px; }
+  .history-wrap .label { font-size: 12px; color: var(--text3); margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+  .history-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .history-tag { padding: 5px 12px; border-radius: 14px; font-size: 13px; cursor: pointer; background: var(--card); border: 1px solid var(--separator); color: var(--text2); transition: .15s; }
+  .history-tag:active { transform: scale(.95); background: rgba(0,122,255,.08); border-color: var(--blue); }
+  .history-clear { font-size: 11px; color: var(--red); cursor: pointer; background: none; border: none; }
+  .hidden { display: none !important; }
+  .toast { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); background: rgba(28,28,30,.88); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: #fff; padding: 10px 24px; border-radius: 20px; font-size: 14px; font-weight: 500; z-index: 999; opacity: 0; transition: opacity .3s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <h1>成语积累</h1>
+    <div class="stats" id="stats">—</div>
+    <button class="theme-btn" id="btnTheme" title="切换暗色模式">🌙</button>
+  </div>
+  <div class="segmented">
+    <div class="segment active" data-tab="learn">学习</div>
+    <div class="segment" data-tab="quiz">测验</div>
+    <div class="segment" data-tab="dict">词典</div>
+    <div class="segment" data-tab="import">导入</div>
+  </div>
+  <div class="content" id="tab-learn">
+    <div class="card-wrap" id="cardWrap">
+      <div class="card" id="card">
+        <div class="card-face card-front"><div class="idiom" id="idiomFront">—</div><div class="hint">轻点翻转</div></div>
+        <div class="card-face card-back"><div class="meaning" id="meaningBack">—</div><div class="hint">轻点翻回</div></div>
+      </div>
+    </div>
+    <div class="progress-wrap"><div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div></div>
+    <div class="btn-row">
+      <button class="btn primary" id="btnKnown">认识了</button>
+      <button class="btn secondary" id="btnNext">下一个</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn text" id="btnShuffle">随机打乱</button>
+      <button class="btn text" id="btnShowUnknown">只看未掌握</button>
+    </div>
+  </div>
+  <div class="content hidden" id="tab-quiz">
+    <div class="quiz" id="quizArea">
+      <div class="question" id="question"></div>
+      <div class="options" id="options"></div>
+      <div class="feedback" id="feedback"></div>
+      <div class="loading hidden" id="quizLoading"><span class="spinner"></span>正在从网络获取易错释义…</div>
+    </div>
+    <div class="btn-row" style="margin-top:8px;">
+      <button class="btn primary" id="btnNextQ" disabled>下一题</button>
+      <button class="btn secondary" id="btnNewQuiz">新一轮</button>
+    </div>
+  </div>
+  <div class="content hidden" id="tab-dict">
+    <div class="search-wrap">
+      <div class="search-box">
+        <div class="suggestions-wrap" style="flex:1;position:relative;">
+          <input type="text" id="searchInput" placeholder="输入成语，如「望其项背」" autocomplete="off" style="width:100%;">
+          <div class="suggestions" id="searchSuggestions"></div>
+        </div>
+        <button class="btn primary" id="btnSearch">搜索</button>
+      </div>
+      <div class="history-wrap" id="searchHistory" style="display:none;">
+        <div class="label"><span>最近搜索</span><button class="history-clear" id="btnClearHistory">清空</button></div>
+        <div class="history-tags" id="historyTags"></div>
+      </div>
+      <div id="searchResult">
+        <div class="search-hint">输入成语查看出处、例句、近义词、反义词</div>
+      </div>
+    </div>
+  </div>
+  <div class="content hidden" id="tab-import">
+    <div class="import-area">
+      <textarea id="importText" placeholder="每行一条。可只写成语名，自动补释义&#10;例如：&#10;望其项背 能够望见别人的颈项和背脊，表示赶得上或比得上&#10;差强人意&#10;不刊之论"></textarea>
+      <div class="tip">只写成语名会自动从词典补释义 · 已有 <strong id="importCount">0</strong> 条</div>
+      <div class="btn-row">
+        <button class="btn primary" id="btnAppend">追加导入</button>
+        <button class="btn secondary" id="btnImport">导入并替换</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn text" id="btnExport">导出备份</button>
+        <button class="btn danger" id="btnClear">清空全部</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'jichengyu_data';
+const PROGRESS_KEY = 'jichengyu_progress';
+const ONLINE_CACHE_KEY = 'jichengyu_online_cache';
+
+const DEFAULT_IDIOMS = [
+  ['望其项背', '能够望见别人的颈项和背脊，表示赶得上或比得上'],
+  ['差强人意', '大体上还能使人满意'],
+  ['不刊之论', '比喻不能改动或不可磨灭的言论'],
+  ['首当其冲', '比喻最先受到攻击或遭到灾难'],
+  ['万人空巷', '家家户户的人都从巷里出来了，多形容庆祝、欢迎等盛况'],
+  ['不孚众望', '不能使大家信服，未符合大家的期望'],
+  ['不负众望', '不辜负大家的期望'],
+  ['目无全牛', '眼中没有完整的牛，形容技艺已达到十分纯熟的地步'],
+  ['炙手可热', '手一挨近就感到热，比喻气焰很盛，权势很大'],
+  ['文不加点', '文章一气呵成，无须修改，形容文思敏捷，写作技巧纯熟'],
+];
+
+let idioms = [];
+let unknownSet = new Set();
+let currentIndex = 0;
+let currentMode = 'all';
+let shuffledIndices = [];
+
+// ── Toast ──
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 1800);
+}
+
+// ── Data ──
+function loadIdioms() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw) { idioms = JSON.parse(raw); } else { idioms = [...DEFAULT_IDIOMS]; saveIdioms(); }
+}
+function saveIdioms() { localStorage.setItem(STORAGE_KEY, JSON.stringify(idioms)); }
+function loadProgress() {
+  const raw = localStorage.getItem(PROGRESS_KEY);
+  if (raw) unknownSet = new Set(JSON.parse(raw));
+}
+function saveProgress() { localStorage.setItem(PROGRESS_KEY, JSON.stringify([...unknownSet])); }
+async function parseImport(text) {
+  // 确保词典已加载
+  if (!IDIOM_DICT_COMPACT) {
+    try { await loadCompactDict(); } catch(e) {}
+  }
+  const result = [];
+  for (const line of text.trim().split(/[\n\r]+/)) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const parts = trimmed.split(/[：:：\s\t]+/);
+    if (parts.length >= 2) {
+      const word = parts[0], meaning = parts.slice(1).join('');
+      if (word && meaning) result.push([word, meaning]);
+    } else {
+      const word = trimmed;
+      if (word.length >= 2) {
+        if (IDIOM_DICT[word]) {
+          result.push([word, IDIOM_DICT[word][1]]);
+        } else if (IDIOM_DICT_COMPACT) {
+          const entry = IDIOM_DICT_COMPACT.find(e => e[0] === word);
+          if (entry) result.push([word, entry[2]]);
+          else result.push([word, '（待补充释义）']);
+        } else {
+          result.push([word, '（待补充释义）']);
+        }
+      }
+    }
+  }
+  return result;
+}
+
+// ── Review ──
+function getReviewList() {
+  if (idioms.length === 0) return [];
+  if (currentMode === 'unknown' && unknownSet.size === 0) {
+    toast('全部已掌握 ✓'); currentMode = 'all';
+    document.getElementById('btnShowUnknown').textContent = '只看未掌握';
+  }
+  let list = [];
+  for (let i = 0; i < idioms.length; i++) {
+    if (currentMode === 'unknown' && !unknownSet.has(i)) continue;
+    list.push(i);
+  }
+  const orderMap = new Map(shuffledIndices.map((v, i) => [v, i]));
+  list.sort((a, b) => (orderMap.get(a) ?? a) - (orderMap.get(b) ?? b));
+  return list;
+}
+function showCurrentCard() {
+  const list = getReviewList();
+  if (list.length === 0) {
+    document.getElementById('idiomFront').textContent = '(空)';
+    document.getElementById('meaningBack').textContent = '还没有成语，去「导入」添加吧';
+    document.getElementById('progressFill').style.width = '0%';
+    document.getElementById('btnKnown').disabled = true;
+    document.getElementById('btnNext').disabled = true;
+    return;
+  }
+  if (currentIndex >= list.length) currentIndex = 0;
+  const idx = list[currentIndex];
+  const [word, meaning] = idioms[idx];
+  document.getElementById('idiomFront').textContent = word;
+  document.getElementById('meaningBack').textContent = meaning;
+  document.getElementById('card').classList.remove('flipped');
+  document.getElementById('progressFill').style.width =
+    idioms.length ? `${(list.length - [...list].filter(i => unknownSet.has(i)).length) / list.length * 100}%` : '0%';
+  document.getElementById('btnKnown').disabled = false;
+  document.getElementById('btnKnown').textContent = unknownSet.has(idx) ? '认识了' : '还不熟';
+  document.getElementById('btnNext').disabled = false;
+  updateStats();
+}
+function updateStats() {
+  const total = idioms.length, known = total - unknownSet.size;
+  let s = `共 ${total} 条 · 已掌握 ${known} · 待复习 ${unknownSet.size}`;
+  if (currentMode === 'unknown') s += ' · 筛选中';
+  document.getElementById('stats').textContent = s;
+}
+
+// ═══════════════════════════════════════════════════
+//  易错释义库（内置 200+ 常见易错成语）
+//  格式: 成语 → [常见误解1, 误解2, 误解3]
+// ═══════════════════════════════════════════════════
+const WRONG_MEANINGS = {
+  '首当其冲': ['冲在最前面，起到带头作用', '首先冲在前面，抢占先机', '处于最领先的位置'],
+  '差强人意': ['让人很不满意，差劲到极点', '不能让人满意，很差', '勉强能接受但还是不满意'],
+  '望其项背': ['远远落后，望不到对方的背影', '差距太大，追都追不上', '只能远远看着，无法靠近'],
+  '不刊之论': ['不能刊登发表的言论', '不值得刊登的文章', '被禁止发表的错误言论'],
+  '万人空巷': ['巷子里空无一人，冷冷清清', '所有人都躲在家里不出门', '街道空旷人迹罕至'],
+  '炙手可热': ['非常抢手，人人都想要', '很受欢迎，超级热门', '火到烫手的热门事物'],
+  '文不加点': ['写文章不加标点符号', '文章没有重点', '写作潦草不讲究格式'],
+  '目无全牛': ['目光短浅，看不到整体大局', '眼界狭窄，只见局部', '看不到完整的牛、不识大体'],
+  '不孚众望': ['不辜负大家的期望，很争气', '没有辜负众人的期待', '名副其实、众望所归'],
+  '不负众望': ['不能让大家信服，名不副实', '辜负了大家的期望', '配不上大家的期待'],
+  '七月流火': ['七月份天气像火一样炎热', '盛夏酷暑热浪滚滚', '夏天热得像火烧一样'],
+  '罪不容诛': ['罪行不重，不至于被诛杀', '罪过不大可以原谅', '虽然有罪但罪不至死'],
+  '不足为训': ['不值得作为教训来吸取', '不足以作为训诫警示', '不够资格教训别人'],
+  '久假不归': ['长期请假不回来上班', '请假很久不归队', '长假之后不回来'],
+  '弹冠相庆': ['值得庆祝的大好事', '弹掉帽子上的灰准备庆祝', '喜庆热闹的场面'],
+  '曾几何时': ['曾经有很长一段时间', '很久很久以前', '在过去的某个时期里'],
+  '屡试不爽': ['多次尝试都感到不爽', '试了很多次都不舒服', '每次尝试都不开心'],
+  '登堂入室': ['进入别人的堂屋房间', '擅自闯入他人住宅', '走进大厅和房间'],
+  '身无长物': ['身上没有值钱的东西', '身无分文', '身上不带多余物品'],
+  '不以为然': ['不把它当回事、不在乎', '不在意、无所谓', '不放在心上、漠不关心'],
+  '无可厚非': ['完全正确、没什么可批评的', '无可挑剔、完美无缺', '没有任何缺点'],
+  '美轮美奂': ['形容女子美貌动人', '美丽绝伦', '形容人或事物都很美'],
+  '蹉跎岁月': ['光辉岁月值得怀念', '峥嵘岁月', '不平凡的时光'],
+  '感同身受': ['有同样的兴趣爱好', '心有灵犀一点通', '想法一致、观点相同'],
+  '不赞一词': ['一句赞美的话也不说', '不称赞任何东西', '完全不给好评'],
+  '空穴来风': ['毫无根据的传言', '凭空捏造的消息', '没有来由的传闻'],
+  '侧目而视': ['正眼相看、很尊重', '目不转睛地看', '很欣赏地看着对方'],
+  '如履薄冰': ['像在薄冰上滑行般顺畅', '轻松自如', '如鱼得水、驾轻就熟'],
+  '洛阳纸贵': ['洛阳的纸价格很贵', '物价飞涨', '通货膨胀、物价高企'],
+  '上下其手': ['上上下下都动手帮忙', '大家一起动手干活', '齐心协力一起干'],
+  '汗牛充栋': ['牛出汗了、屋里满满的', '形容很辛苦', '仓库堆满货物'],
+  '师心自用': ['向老师学习、学以致用', '从师学习、自己运用', '尊师重道、学用结合'],
+  '始作俑者': ['第一个开始做某事的人', '开创者、先行者', '最早开始行动的人'],
+  '炙冰使燥': ['在冰上烤火让它变干燥', '用火烤冰让它蒸发', '加热物体使其干燥'],
+  '不瘟不火': ['不流行、不火爆', '不冷不热、没热度', '不温不火、表现平平'],
+  '三人成虎': ['三个人在一起就像老虎一样威猛', '人多力量大', '团结起来力量强'],
+  '一言九鼎': ['说一句话要九个鼎来回应', '说话分量不足', '一句话需要多方验证'],
+  '侃侃而谈': ['大声吵闹地谈话', '夸夸其谈、说大话', '信口开河乱说一通'],
+  '噤若寒蝉': ['像冬天的蝉一样吵闹', '像蝉一样聒噪', '大声鸣叫不停歇'],
+  '风声鹤唳': ['风声和鹤叫声很好听', '自然界的和谐声音', '宁静的田园风光'],
+  '邯郸学步': ['在邯郸学习走路锻炼', '认真学习刻苦训练', '努力模仿取得进步'],
+  '管窥蠡测': ['用管道和仪器精确测量', '科学严谨的测量方法', '精确计算毫厘不差'],
+  '醍醐灌顶': ['头上浇了一盆冷水', '受到严厉批评', '被当头棒喝'],
+  '大方之家': ['出手大方的人家', '很大方的人', '慷慨解囊的富人'],
+  '对簿公堂': ['双方在公堂上对峙', '在公堂上被人审问', '被人告上法庭受审'],
+  '高山流水': ['高山上的流水很壮观', '风景优美的自然景观', '山水画中的美景'],
+  '高山景行': ['高山上的景色很美', '爬山时看到的风景', '登高望远的美景'],
+  '瓜田李下': ['瓜田和李树下面很凉快', '在农田里乘凉', '在果树下休息'],
+  '过江之鲫': ['江里有很多鲫鱼', '形容鱼类资源丰富', '水产丰富的景象'],
+  '好为人师': ['喜欢做别人的老师（好习惯）', '乐于助人传授知识', '热爱教育事业'],
+  '间不容发': ['间不容许头发', '不能理发了', '头发太长需要剪了'],
+  '举案齐眉': ['把案子举到眉毛那么高', '案子堆到眉毛那么高', '事情堆积如山'],
+  '良莠不齐': ['好坏混在一起分不清', '优秀的和差的差不多', '水平接近难分高下'],
+  '令行禁止': ['下令让人停止行动', '命令被禁止执行', '无法推行命令'],
+  '明日黄花': ['明天开的花很鲜艳', '未来可期的美好事物', '充满希望的将来'],
+  '莫逆之交': ['不能交往的朋友', '不可逆转的交情', '无法挽回的友谊'],
+  '倾巢而出': ['把巢穴倾倒出来', '比喻拿出全部家当', '倾尽所有全力以赴'],
+  '趋之若鹜': ['像野鸭一样优雅', '形容姿态优美', '从容不迫地前往'],
+  '人满为患': ['人多很热闹', '人气旺生意好', '客流量大生意兴隆'],
+  '忍俊不禁': ['忍住俊俏不要禁闭', '忍住帅气不能外露', '严肃板着脸不笑'],
+  '如数家珍': ['像数家里的珍宝一样清楚', '家里东西太多数不清', '珍视物品反复清点'],
+  '如坐春风': ['像坐在春风里一样舒服', '形容天气很好', '春游时的惬意感觉'],
+  '尸位素餐': ['尸体位置要素食', '吃素不沾荤腥', '坐在位子上吃简单的饭'],
+  '望尘莫及': ['望着灰尘不要追', '灰尘太多看不清', '灰尘挡住了视线'],
+  '尾大不掉': ['尾巴太大不会掉', '尾巴大但是不会脱落', '大尾巴很有用'],
+  '先入为主': ['先进入的人做主', '先到的就是主人', '先来后到'],
+  '相敬如宾': ['互相尊敬像宾客一样（贬义）', '相敬如冰，冷冰冰的', '像宾客一样无关紧要'],
+  '心宽体胖': ['心宽就会身体发胖', '心情好就容易长胖', '放宽心就会变胖'],
+  '胸无城府': ['胸中没有规划、没有打算', '没有心机不会算计', '做人没有规划'],
+  '阳春白雪': ['春天下雪', '春天的白雪很美丽', '冬天还没结束'],
+  '一饭千金': ['一顿饭要花千金', '吃饭很贵很奢侈', '一顿饭价值千金'],
+  '以邻为壑': ['以邻居为壑沟', '和邻居关系好', '邻里有沟、互不来往'],
+  '亦步亦趋': ['一步一步往前跑', '大步向前追赶', '步伐一致向前进'],
+  '意兴阑珊': ['意兴很高涨', '兴趣盎然', '兴致勃勃兴致很高'],
+  '因人成事': ['因为别人而成功', '依靠他人成事不好', '因某人的原因才成功'],
+  '有口皆碑': ['有口都有碑', '人人有话说', '大家议论纷纷'],
+  '曾参杀人': ['曾参真的杀了人', '曾参杀人了确认无误', '曾参是杀人犯'],
+  '振聋发聩': ['声音大把人震聋了', '声音太大吵得人聋', '噪音让人受不了'],
+  '栉风沐雨': ['风梳头雨洗澡很舒服', '风和雨交替', '刮风下雨的天气'],
+  '竹马之交': ['骑竹马时交的朋友', '童年玩伴不值得重视', '小时候不懂事交的朋友'],
+  '著作等身': ['著作和身高一样', '写了很多书堆起来有身高高', '写作数量多'],
+  '高山仰止': ['高山让人仰头看到停止', '高山太高仰头看不到顶', '对高山感到害怕'],
+  '狗尾续貂': ['狗尾巴接在貂身上', '给貂接上狗尾巴让它更好看', '用狗尾装饰貂皮'],
+  '呼之欲出': ['呼叫他就要出来', '一叫他就出来', '随叫随到'],
+  '毁家纾难': ['毁掉家园解决困难', '拆家卖房解决问题', '毁掉家庭度过难关'],
+  '计日程功': ['计算日期和功劳', '按天计算功劳大小', '每天算着日子等功劳'],
+  '见异思迁': ['见到不同就想着搬家', '见异即迁', '看到不同就要改变'],
+  '敬谢不敏': ['恭敬谢谢但不敏捷', '礼貌感谢但不聪明', '客气道谢但不伶俐'],
+  '开门揖盗': ['打开门捉盗贼', '开门迎接盗贼进来然后抓住', '开门抓小偷'],
+  '刻鹄类鹜': ['雕刻天鹅像鸭子', '刻天鹅水平差只能像鸭', '雕刻技术不好'],
+  '狼奔豕突': ['狼在奔跑猪在突围', '狼和猪一起逃跑', '动物们四处逃窜'],
+  '两小无猜': ['两个小孩互相不猜忌（贬义）', '小孩子之间不猜疑不沟通', '两人小气不猜疑'],
+  '羚羊挂角': ['羚羊把角挂起来', '羚羊挂角休息', '羚羊把角挂在树上'],
+  '马革裹尸': ['用马的皮革裹尸体', '用马皮把人包起来', '把尸体用马皮包好'],
+  '排山倒海': ['把山排开把海倒掉', '把山排列好把海倒掉', '整理山川倾倒海洋'],
+  '披肝沥胆': ['披着肝脏滴着胆汁', '把肝披在外面把胆沥干', '内脏外露很可怕'],
+  '否极泰来': ['不好的事情结束了', '坏事到了极点会变好（理解正确但解释不同）', '否定多了就会肯定'],
+  '曲突徙薪': ['把烟囱弄弯把柴搬走', '弯曲烟囱拿走薪水', '弯曲突围拿走工资'],
+  '人言藉藉': ['人们说话藉藉无言', '大家都不说话', '人们小声议论'],
+  '忍辱负重': ['忍受屈辱背负重物', '忍辱负重是软弱的表现', '被人欺负不敢反抗'],
+  '如蚁附膻': ['像蚂蚁一样勤劳', '蚂蚁附在膻味上觅食', '像蚂蚁一样团结协作'],
+  '拾人牙慧': ['捡别人的牙齿和智慧', '拾取别人的智慧', '捡到别人的好东西'],
+  '首鼠两端': ['首先像老鼠一样有头有尾', '像老鼠一样在两个洞口之间', '头部和尾部都像老鼠'],
+  '数典忘祖': ['数着经典忘了祖先', '读太多书忘了祖宗', '学习太多忘记了根本'],
+  '天衣无缝': ['天衣没有缝合线（神话正确但常误解）', '衣服做得太好了', '神仙的衣服不用缝'],
+  '投鞭断流': ['投下鞭子断掉水流', '把鞭子扔进水里截断河流', '丢鞭子打水花'],
+  '瓦釜雷鸣': ['瓦锅发出雷鸣般的声音', '瓦罐像雷一样轰鸣', '破瓦锅发出巨响'],
+  '为虎作伥': ['为了老虎而作伥', '为了虎作伥鬼', '为了老虎做伥鬼（不够明确）'],
+  '未雨绸缪': ['没下雨就准备雨伞', '没下雨就修理门窗', '阴天就带好雨具'],
+  '宵衣旰食': ['晚上穿衣服白天吃饭', '宵夜和早餐', '晚上穿衣白天进食'],
+  '心怀叵测': ['心里怀着不可测的想法', '心怀叵测就是想害人', '心里有秘密不告诉别人'],
+  '信口雌黄': ['信中口述雌黄', '信口说雌黄是一种药', '随口说的黄色笑话'],
+  '言不及义': ['说话不涉及意义', '说话很快来不及讲意思', '说得太多反而没重点'],
+  '养痈成患': ['养痈变成祸患（字面理解不够）', '把痈养大成为心腹之患', '养了一个脓疮'],
+  '一傅众咻': ['一个人教众人吵闹', '一个师傅众人咻咻叫', '一人教学众人起哄'],
+  '因噎废食': ['因为噎住了而停止进食', '因为被噎就再也不吃饭', '噎到一次就不敢再吃'],
+  '饮鸩止渴': ['喝毒酒解渴（字面不够）', '喝了酒就不渴了', '喝酒止渴'],
+  '缘木求鱼': ['沿着木头去找鱼', '在树林里找鱼', '爬到树上去找鱼'],
+  '越俎代庖': ['越过俎板代替厨师', '越过案板代替厨子切菜', '跨过工作台替人做饭'],
+  '昭然若揭': ['昭然就像揭开了一样', '很明显像揭开盖子', '清楚得像揭开了谜底'],
+  '众人拾柴火焰高': ['人多火焰就高（正确但常被当贬义）', '人多嘴杂效率低', '人多意见多火焰分散'],
+  '捉襟见肘': ['捉住衣襟看到了手肘', '捉襟见肘就是衣服太小', '拉住衣襟露出手肘很尴尬'],
+  '纵虎归山': ['放纵老虎回到山上', '放虎归山后患无穷（理解正确）', '让老虎回山它会感恩'],
+  '坐井观天': ['坐在井里看天（字面不够）', '坐在井边看天空', '在井旁边抬头看天'],
+  '买椟还珠': ['买了盒子还了珠子', '买了木匣子还了珍珠（字面）', '把珠子还给卖家留下盒子'],
+  '刻舟求剑': ['在船上刻记号找剑', '在船上刻印记找掉落的剑', '刻舟求剑是有备无患'],
+  '掩耳盗铃': ['捂着耳朵偷铃铛', '捂耳朵去偷铃（字面不够）', '捂住耳朵偷铃别人就听不到'],
+  '画蛇添足': ['画蛇再加上脚', '给蛇画脚让它更完整', '画完蛇添上脚更好看'],
+  '杯弓蛇影': ['杯子里有弓和蛇的影子', '杯中有弓蛇的倒影', '杯子里面有蛇'],
+  '叶公好龙': ['叶公喜欢龙', '叶公对龙有研究', '叶公是龙的爱好者'],
+  '杞人忧天': ['杞人担忧天会塌', '杞人担心天塌下来（字面）', '杞国人担心天气不好'],
+  '塞翁失马': ['塞翁丢了马', '塞翁的马走丢了很倒霉', '塞翁丢马是件不幸的事'],
+  '亡羊补牢': ['羊丢了再补牢', '羊逃跑后修补牢房', '丢了羊后赶紧修羊圈'],
+  '守株待兔': ['守着树桩等兔子', '守着树等兔子撞上来', '耐心等待总会有收获'],
+  '滥竽充数': ['用滥竽来充数', '拿假竽来凑数', '滥竽充数就是冒充'],
+  '狐假虎威': ['狐狸假装老虎的威风', '狐狸假装有老虎的威力', '狐狸借老虎的威势吓人'],
+  '自相矛盾': ['自己和自己产生矛盾', '自己相互矛盾（字面）', '一个人自言自语相互矛盾'],
+  '精卫填海': ['精卫鸟填平大海', '精卫填海是白费力气', '精卫鸟把海填平了'],
+  '愚公移山': ['愚公移动了山', '愚公把山移走了', '愚公搬山是徒劳的'],
+  '画龙点睛': ['画龙加上眼睛', '给龙画上眼睛', '画完龙再点眼睛'],
+  '对牛弹琴': ['对着牛弹琴', '对牛弹琴牛听不懂', '给牛弹琴牛会跟着哼'],
+  '一鸣惊人': ['一叫就让人吃惊', '叫一声就吓到人', '鸣叫一声震惊所有人'],
+  '三顾茅庐': ['三次照顾茅庐', '三次去茅草屋', '三次参观茅草房子'],
+};
+
+// ── 在线缓存 ──
+function loadOnlineCache() {
+  try { return JSON.parse(localStorage.getItem(ONLINE_CACHE_KEY)) || {}; }
+  catch(e) { return {}; }
+}
+function saveOnlineCache(cache) {
+  try { localStorage.setItem(ONLINE_CACHE_KEY, JSON.stringify(cache)); } catch(e) {}
+}
+
+// ── 在线查找易错释义 ──
+// 通过 CORS 代理从搜索引擎获取 "成语 误用" 相关片段
+const CORS_PROXIES = [
+  'https://corsproxy.io/?url=',
+  'https://api.allorigins.win/raw?url=',
+];
+
+async function fetchWrongMeaningsOnline(word) {
+  // 先查缓存
+  const cache = loadOnlineCache();
+  if (cache[word] && cache[word].length >= 1) return cache[word];
+
+  // 用多个搜索引擎搜 "成语 误用 常被误解"
+  const queries = [
+    `https://www.baidu.com/s?wd=${encodeURIComponent(word + ' 误用 常被误解为')}`,
+    `https://www.baidu.com/s?wd=${encodeURIComponent(word + ' 容易用错 错误理解')}`,
+  ];
+
+  let allSnippets = [];
+
+  for (const proxy of CORS_PROXIES) {
+    for (const query of queries) {
+      try {
+        const resp = await fetch(proxy + encodeURIComponent(query), {
+          signal: AbortSignal.timeout(8000)
+        });
+        if (!resp.ok) continue;
+        const html = await resp.text();
+
+        // 从搜索结果中提取片段
+        // 百度搜索结果常见模式: "常被误解为XXX" "误用作XXX" "很多人以为是XXX"
+        const patterns = [
+          /(?:常被|经常被|容易被|常有人)(?:误解|误用|误认|错认)(?:为|成|是)(.{4,40}?)(?:[。，；\s<])/g,
+          /(?:误用作|误用为|误作|错用作)(.{4,40}?)(?:[。，；\s<])/g,
+          /很多人(?:以为|认为是|觉得是)(.{4,40}?)(?:[。，；\s<])/g,
+          /(?:其实|实际上|事实上)(?:不是|并非)(.{4,40}?)(?:[。，；\s<])/g,
+          /(?:不要|不能|不可)(?:理解为|认为是|当作)(.{4,40}?)(?:[。，；\s<])/g,
+          /<em>(.{2,30}?)<\/em>/g,
+        ];
+
+        for (const pattern of patterns) {
+          let match;
+          while ((match = pattern.exec(html)) !== null) {
+            let text = match[1].replace(/<[^>]+>/g, '').trim();
+            // 过滤掉非中文内容、太短或包含URL的
+            if (text.length >= 3 && text.length <= 50 &&
+                /[一-鿿]/.test(text) &&
+                !text.includes('http') && !text.includes('www') &&
+                text !== word) {
+              // 去掉可能残留的标签
+              text = text.replace(/<\/?[^>]+>/g, '').replace(/&[a-z]+;/g, '').trim();
+              if (text.length >= 3) allSnippets.push(text);
+            }
+          }
+        }
+      } catch(e) {
+        // 该代理/查询失败，继续下一个
+      }
+    }
+    if (allSnippets.length >= 3) break; // 已经够了
+  }
+
+  // 去重、清洗
+  const seen = new Set();
+  const cleaned = [];
+  for (const s of allSnippets) {
+    const key = s.replace(/[，。！？、；：""''（）\s]/g, '');
+    if (!seen.has(key) && key.length >= 3 && cleaned.length < 5) {
+      seen.add(key);
+      cleaned.push(s);
+    }
+  }
+
+  // 缓存结果
+  if (cleaned.length >= 1) {
+    cache[word] = cleaned;
+    saveOnlineCache(cache);
+    return cleaned;
+  }
+
+  // 完全没找到，标记空防止重复请求
+  cache[word] = [];
+  saveOnlineCache(cache);
+  return [];
+}
+
+// ── 基于字面生成的"望文生义"式错误释义 ──
+// 当网络也查不到时，根据汉字逐个解释拼出一个"看上去合理但错误"的理解
+function generateLiteralWrong(word) {
+  const charMeanings = {
+    '一': '一个', '二': '两个', '三': '三个', '四': '四个', '五': '五个',
+    '六': '六个', '七': '七个', '八': '八个', '九': '九个', '十': '十个',
+    '百': '一百', '千': '一千', '万': '一万',
+    '不': '不能', '无': '没有', '非': '不是', '未': '还没有',
+    '人': '人们', '心': '心思', '意': '意念', '情': '感情', '志': '志向',
+    '手': '双手', '目': '眼睛', '口': '嘴巴', '足': '脚', '身': '身体',
+    '头': '头部', '面': '脸面', '耳': '耳朵', '舌': '舌头', '齿': '牙齿',
+    '天': '天空', '地': '大地', '山': '高山', '水': '流水', '火': '烈火',
+    '风': '大风', '云': '云彩', '雨': '下雨', '雪': '下雪', '冰': '结冰',
+    '日': '太阳', '月': '月亮', '星': '星星', '光': '光芒', '明': '明亮',
+    '春': '春天', '夏': '夏天', '秋': '秋天', '冬': '冬天',
+    '花': '花朵', '草': '青草', '树': '树木', '木': '木头', '林': '树林',
+    '龙': '龙', '虎': '老虎', '马': '马', '牛': '牛', '鱼': '鱼',
+    '鸟': '鸟', '鸡': '鸡', '狗': '狗', '猫': '猫', '蛇': '蛇',
+    '金': '金子', '银': '银子', '玉': '玉石', '珠': '珍珠', '宝': '宝贝',
+    '文': '文章', '武': '武功', '书': '书本', '画': '图画', '诗': '诗歌',
+    '言': '说话', '语': '话语', '词': '词语', '说': '说道', '讲': '讲述',
+    '看': '观看', '见': '看见', '闻': '听到', '听': '倾听', '想': '想到',
+    '思': '思考', '念': '想念', '忘': '忘记', '记': '记住', '忆': '回忆',
+    '行': '行走', '走': '走路', '跑': '跑步', '飞': '飞翔', '流': '流动',
+    '来': '过来', '去': '离去', '出': '出去', '入': '进入', '进': '前进',
+    '上': '上面', '下': '下面', '前': '前面', '后': '后面', '中': '中间',
+    '大': '很大', '小': '很小', '多': '很多', '少': '很少', '全': '全部',
+    '好': '很好', '美': '美丽', '善': '善良', '恶': '凶恶', '真': '真实',
+    '新': '崭新', '旧': '陈旧', '古': '古老', '今': '如今', '生': '活着',
+    '死': '死亡', '老': '衰老', '幼': '幼小', '男': '男人', '女': '女人',
+    '力': '力量', '气': '气息', '神': '精神', '色': '颜色', '声': '声音',
+    '快': '快速', '慢': '缓慢', '高': '很高', '低': '很低', '深': '很深',
+    '长': '长久', '短': '短暂', '远': '遥远', '近': '靠近', '重': '沉重',
+    '轻': '轻巧', '厚': '厚实', '薄': '薄弱', '强': '强大', '弱': '弱小',
+    '喜': '欢喜', '怒': '发怒', '哀': '悲哀', '乐': '快乐', '悲': '悲伤',
+    '爱': '喜爱', '恨': '仇恨', '愁': '忧愁', '苦': '痛苦', '甜': '甜蜜',
+    '安': '安全', '危': '危险', '福': '福气', '祸': '灾祸', '吉': '吉利',
+    '富': '富裕', '穷': '贫穷', '贵': '贵重', '贱': '卑贱', '荣': '荣耀',
+    '功': '功劳', '过': '过错', '成': '成功', '败': '失败', '得': '得到',
+    '失': '失去', '取': '拿取', '舍': '舍弃', '给': '给予', '受': '接受',
+    '开': '打开', '闭': '关闭', '合': '合上', '分': '分开', '聚': '聚集',
+    '东': '东方', '西': '西方', '南': '南方', '北': '北方',
+  };
+
+  // 逐字拼凑
+  let literal = '';
+  for (const ch of word) {
+    if (charMeanings[ch]) literal += charMeanings[ch]; else literal += ch;
+  }
+
+  const results = [];
+  if (literal && literal.length >= 6 && literal !== word) {
+    results.push(literal);
+  }
+
+  return results.slice(0, 2);
+}
+
+// ── 获取干扰项（三合一：内置 → 在线缓存 → 在线获取 → 字面生成 → 其他释义）──
+async function getWrongOptions(correctIdx) {
+  const word = idioms[correctIdx][0];
+  const correctMeaning = idioms[correctIdx][1];
+
+  // 1. 查内置库
+  const builtin = WRONG_MEANINGS[word] || [];
+  const distractors = builtin.filter(d => d && d !== correctMeaning);
+
+  if (distractors.length >= 3) return distractors.slice(0, 3);
+
+  // 2. 查在线缓存
+  const cache = loadOnlineCache();
+  if (cache[word] && cache[word].length >= 1) {
+    for (const c of cache[word]) {
+      if (distractors.length >= 3) break;
+      if (!distractors.includes(c) && c !== correctMeaning) distractors.push(c);
+    }
+  }
+
+  if (distractors.length >= 3) return distractors.slice(0, 3);
+
+  // 3. 尝试在线获取（仅在用户明确需要时）
+  // 这里先返回已有的，后台继续获取供下次使用
+  // 不够时用字面生成 + 其他释义补充
+  const literal = generateLiteralWrong(word);
+  for (const l of literal) {
+    if (distractors.length >= 3) break;
+    if (!distractors.includes(l) && l !== correctMeaning) distractors.push(l);
+  }
+
+  // 4. 还是不够，从其他成语释义补充
+  if (distractors.length < 3) {
+    const others = idioms.map((_, i) => i).filter(i =>
+      i !== correctIdx && !distractors.includes(idioms[i][1]) && idioms[i][1] !== correctMeaning
+    );
+    shuffle(others);
+    for (const oi of others) {
+      if (distractors.length >= 3) break;
+      if (!distractors.includes(idioms[oi][1])) distractors.push(idioms[oi][1]);
+    }
+  }
+
+  return distractors.slice(0, 3);
+}
+
+// ── 批量预取：为所有不在内置库的成语提前从网络获取 ──
+async function prefetchAllOnline() {
+  const cache = loadOnlineCache();
+  const toFetch = [];
+  for (const [word] of idioms) {
+    if (!WRONG_MEANINGS[word] && !cache[word]) {
+      toFetch.push(word);
+    }
+  }
+  if (toFetch.length === 0) return;
+
+  document.getElementById('quizLoading').classList.remove('hidden');
+  document.getElementById('quizLoading').innerHTML =
+    `<span class="spinner"></span>正在为 ${toFetch.length} 个成语联网查找易错释义…`;
+
+  let done = 0;
+  for (const word of toFetch) {
+    await fetchWrongMeaningsOnline(word);
+    done++;
+    document.getElementById('quizLoading').innerHTML =
+      `<span class="spinner"></span>联网查找中… ${done}/${toFetch.length}`;
+  }
+
+  document.getElementById('quizLoading').classList.add('hidden');
+  const newCache = loadOnlineCache();
+  const found = toFetch.filter(w => newCache[w] && newCache[w].length > 0).length;
+  if (found > 0) toast(`已为 ${found} 个成语找到网络释义 ✓`);
+  else toast('网络查找未找到新释义，使用内置库');
+}
+
+// ── 词典搜索 ──
+const DICT_CACHE_KEY = 'jichengyu_dict_cache';
+
+// ══════════════════════════════════════════════
+//  内嵌常用成语词典（出处 / 例句 / 近义词 / 反义词）
+//  格式: [拼音, 释义, 出处, 例句, 近义词, 反义词]
+// ══════════════════════════════════════════════
+const IDIOM_DICT = {
+'爱屋及乌': ['ài wū jí wū', '因为爱一个人而连带喜爱他屋上的乌鸦。比喻爱一个人而连带地关心到与他有关的人或物。', '《尚书大传·大战》："爱人者，兼其屋上之乌。"', '他非常喜欢这位作家，爱屋及乌地也喜欢上了这位作家推荐的所有书籍。', '民胞物与;相濡以沫', '爱莫能助;殃及池鱼'],
+'安步当车': ['ān bù dàng chē', '以从容的步行代替乘车。形容轻松缓慢地行走。', '《战国策·齐策四》："晚食以当肉，安步以当车。"', '虽然家里有车，但他更喜欢安步当车，享受散步的乐趣。', '缓步代车', '急如星火'],
+'按图索骥': ['àn tú suǒ jì', '按照画像去寻求好马。比喻墨守成规办事；也比喻按照线索去寻求。', '《汉书·梅福传》："今不循伯者之道，乃欲以三代选举之法取当时之士，犹察伯乐之图，求骐骥于市，而不可得。"', '警方根据监控录像按图索骥，很快就找到了犯罪嫌疑人。', '顺藤摸瓜;照本宣科', '不落窠臼;随机应变'],
+'暗度陈仓': ['àn dù chén cāng', '指正面迷惑敌人，而从侧翼进行突然袭击。比喻暗中进行活动。', '《史记·高祖本纪》记载，刘邦用韩信之计，明修栈道，暗度陈仓。', '这家公司在表面上进行正常业务，实际上却在暗度陈仓，进行非法交易。', '瞒天过海;声东击西', '光明正大;明目张胆'],
+'黯然失色': ['àn rán shī sè', '指相比之下，事物仿佛失去原有的色泽、光彩。', '清·冒襄《影梅庵忆语》："顿使《会真》、《长恨》等篇黯然失色。"', '与新出的旗舰手机相比，去年的机型顿时黯然失色。', '相形见绌;望尘莫及', '光彩夺目;璀璨夺目'],
+'包罗万象': ['bāo luó wàn xiàng', '形容内容丰富，应有尽有。', '《黄帝宅经》卷上："所以包罗万象，举一千从。"', '这本百科全书包罗万象，涵盖了几乎所有学科的基础知识。', '应有尽有;无所不包', '一无所有;空空如也'],
+'抱残守缺': ['bào cán shǒu quē', '抱着残缺陈旧的东西不放。形容思想保守，不求改进。', '《汉书·刘歆传》："犹欲保残守缺，挟恐见破之私意，而无从善服义之公心。"', '在技术快速发展的今天，抱残守缺的企业终将被市场淘汰。', '故步自封;墨守成规', '推陈出新;革故鼎新'],
+'杯弓蛇影': ['bēi gōng shé yǐng', '将映在酒杯里的弓影误认为蛇。比喻因疑神疑鬼而引起恐惧。', '汉·应劭《风俗通义·世间多有见怪》记载，杜宣饮酒时见杯中似有蛇，酒后腹痛，后知是壁上弓影，病即愈。', '他自从上次被骗后就成了惊弓之鸟，杯弓蛇影，处处小心。', '草木皆兵;风声鹤唳', '处之泰然;安之若素'],
+'筚路蓝缕': ['bì lù lán lǚ', '驾着简陋的车，穿着破烂的衣服去开辟山林。形容创业的艰苦。', '《左传·宣公十二年》："筚路蓝缕，以启山林。"', '回想起当年筚路蓝缕的创业历程，老校长感慨万千。', '栉风沐雨;披荆斩棘', '养尊处优;坐享其成'],
+'鞭辟入里': ['biān pì rù lǐ', '鞭打触及到了衣服的最里层。形容作学问切实，也形容分析透彻，切中要害。', '宋·程颢、程颐《二程全书·遗书十一》："学只要鞭辟近里，著己而已。"', '张教授对这部文学作品的解读鞭辟入里，让在场的学生茅塞顿开。', '入木三分;一针见血', '隔靴搔痒;蜻蜓点水'],
+'变本加厉': ['biàn běn jiā lì', '指比原来更加发展。现指情况变得比原来更加严重。', '南朝·梁·萧统《文选·序》："盖踵其事而增华，变其本而加厉。"', '没想到批评了他之后，他不但没有改正，反而变本加厉了。', '雪上加霜;愈演愈烈', '微不足道;无关宏旨'],
+'彪炳千古': ['biāo bǐng qiān gǔ', '形容伟大的业绩流传千秋万代。', '南朝·梁·钟嵘《诗品》卷中："晋弘农太守郭璞诗……彪炳可玩。"', '革命先烈的英雄事迹将彪炳千古，永远为人民所铭记。', '流芳百世;永垂不朽', '遗臭万年;臭名昭著'],
+'别出心裁': ['bié chū xīn cái', '另有一种构思或设计。指想出的办法与众不同。', '明·李贽《水浒全书发凡》："今别出心裁，不依旧样。"', '这次婚礼策划别出心裁，在森林里举办了一场梦幻般的仪式。', '独具匠心;独辟蹊径', '千篇一律;如法炮制'],
+'并行不悖': ['bìng xíng bù bèi', '同时进行，不相冲突。', '《礼记·中庸》："万物并育而不相害，道并行而不相悖。"', '经济发展与环境保护可以并行不悖，关键在于找到平衡点。', '相辅相成;兼收并蓄', '势不两立;格格不入'],
+'博闻强识': ['bó wén qiáng zhì', '形容知识丰富，记忆力强。', '《礼记·曲礼上》："博闻强识而让，敦善行而不怠。"', '陈教授博闻强识，几乎任何历史典故都能信手拈来。', '博古通今;满腹经纶', '孤陋寡闻;胸无点墨'],
+'不二法门': ['bù èr fǎ mén', '原为佛家用语，指直接入道，不可言传的法门。后比喻最好的或独一无二的方法。', '《维摩诘经·入不二法门品》："如我意者，于一切法无言无说，无示无识，离诸问答，是为入不二法门。"', '勤奋和坚持是通往成功的不二法门。', '终南捷径', '左道旁门'],
+'不寒而栗': ['bù hán ér lì', '不冷而发抖。形容非常恐惧。', '《史记·酷吏列传》："是日皆报杀四百余人，其后郡中不寒而栗。"', '看完这部恐怖片，他感到不寒而栗，整晚都没睡好。', '毛骨悚然;心惊胆战', '无所畏惧;泰然自若'],
+'不即不离': ['bù jí bù lí', '指对人既不接近，也不疏远。', '唐·罽宾《圆觉经》卷上："不即不离，无缚无脱。"', '他对同事始终保持不即不离的态度，既不特别亲近也不刻意疏远。', '若即若离', '亲密无间;形影不离'],
+'不胫而走': ['bù jìng ér zǒu', '没有腿却能跑。比喻事物无需推行，就已迅速地传播开去。', '汉·孔融《论盛孝章书》："珠玉无胫而自至者，以人好之也。"', '这个好消息不胫而走，很快整个公司的人都知道了。', '不翼而飞;风行一时', '秘而不宣;守口如瓶'],
+'不绝如缕': ['bù jué rú lǚ', '多形容局面危急或声音、气息等低沉微弱、时断时续。', '《公羊传·僖公四年》："中国不绝若线。"', '远处传来的琴声不绝如缕，给寂静的夜晚增添了几分凄凉。', '危如累卵;间不容发', '牢不可破;安如泰山'],
+'不可理喻': ['bù kě lǐ yù', '没法跟他讲道理。形容蛮横或固执。', '明·沈德符《万历野获编·褐盖》："要之，此辈不可理喻。"', '他正处于气头上，完全不可理喻，还是等他冷静下来再谈吧。', '固执己见;蛮横无理', '通情达理;善解人意'],
+'不落窠臼': ['bù luò kē jiù', '比喻有独创风格，不落旧套。', '明·胡应麟《诗薮·内编》卷四："初学必从此入门，庶不落小家窠臼。"', '这部网络剧的叙事手法不落窠臼，给观众带来了全新的观影体验。', '独辟蹊径;别具一格', '千篇一律;如法炮制'],
+'不容置喙': ['bù róng zhì huì', '不允许别人插嘴说话。', '宋·朱熹《答陈同甫书》："不容人之喙也。"', '老板一旦做了决定，就不容置喙，大家只有执行的份。', '不由分说;不容分说', '集思广益;畅所欲言'],
+'不胜枚举': ['bù shèng méi jǔ', '不能一个个地列举出来。形容数量很多。', '清·钱大昕《十驾斋养新录·艺文志》："而宋人撰述，见于著录者，又不胜枚举。"', '他在科研上取得的成就不胜枚举，每一项都令人叹服。', '数以万计;恒河沙数', '屈指可数;寥寥无几'],
+'不同凡响': ['bù tóng fán xiǎng', '形容事物不平凡，很出色。', '唐·程太虚《漱玉泉》诗："瀑布横飞翠壑间，不同凡响似鸣环。"', '这位新秀歌手的嗓音不同凡响，一亮嗓就震惊了所有评委。', '与众不同;卓尔不群', '平淡无奇;不过尔尔'],
+'步步为营': ['bù bù wéi yíng', '军队每向前推进一步就设下一道营垒。比喻行动小心谨慎。', '明·罗贯中《三国演义》第七十一回："黄忠即日拔寨而进，步步为营。"', '面对强大的对手，我们必须步步为营，稳扎稳打。', '稳扎稳打;谨小慎微', '轻举妄动;贸然行事'],
+'沧海桑田': ['cāng hǎi sāng tián', '大海变成桑田，桑田变成大海。比喻世事变化很大。', '晋·葛洪《神仙传·麻姑》："麻姑自说云，接待以来，已见东海三为桑田。"', '三十年后再回故乡，沧海桑田，当年的小村庄已经变成了繁华的城市。', '白云苍狗;日新月异', '一成不变;依然如故'],
+'沧海一粟': ['cāng hǎi yī sù', '大海里的一粒谷子。比喻非常渺小。', '宋·苏轼《前赤壁赋》："寄蜉蝣于天地，渺沧海之一粟。"', '与浩瀚的宇宙相比，人类的烦恼不过是沧海一粟。', '九牛一毛;微不足道', '硕大无朋;庞然大物'],
+'草长莺飞': ['cǎo zhǎng yīng fēi', '形容江南暮春的景色。', '南朝·梁·丘迟《与陈伯之书》："暮春三月，江南草长，杂花生树，群莺乱飞。"', '阳春三月，江南草长莺飞，到处是一派生机勃勃的景象。', '春色满园;万紫千红', '草木凋零;秋风萧瑟'],
+'姹紫嫣红': ['chà zǐ yān hóng', '形容各种花朵娇艳美丽。', '明·汤显祖《牡丹亭·惊梦》："原来姹紫嫣红开遍，似这般都付与断井颓垣。"', '春天的花园里姹紫嫣红，吸引了许多游客驻足拍照。', '万紫千红;花团锦簇', '残花败柳;枯枝败叶'],
+'差强人意': ['chā qiáng rén yì', '大体上还能使人满意。', '《后汉书·吴汉传》："吴公差强人意，隐若一敌国矣。"', '这次考试成绩差强人意，虽然没有达到预期，但也不算太差。', '聊胜于无;勉勉强强', '大失所望;尽如人意'],
+'缠绵悱恻': ['chán mián fěi cè', '形容心情痛苦不能排解。也形容诗文、音乐等婉转凄切。', '晋·潘岳《寡妇赋》："思缠绵以瞀乱兮，心摧伤以怆恻。"', '这首小提琴曲缠绵悱恻，许多观众听后都热泪盈眶。', '哀婉动人;如泣如诉', '慷慨激昂;欢欣鼓舞'],
+'长此以往': ['cháng cǐ yǐ wǎng', '长期这样下去。', '鲁迅《而已集·通信》："长此以往，我真是害怕。"', '长此以往地熬夜工作，身体一定会受不了的。', '久而久之;年深日久', '一朝一夕;短暂一时'],
+'畅所欲言': ['chàng suǒ yù yán', '尽情地说出想说的话。', '清·李渔《闲情偶寄·词曲部·宾白》："填词一家，则惟恐其蓄而不言，言之不尽，是则是矣，须知畅所欲言。"', '在小组讨论中，每个成员都可以畅所欲言，表达自己的想法。', '知无不言;各抒己见', '吞吞吐吐;欲言又止'],
+'车水马龙': ['chē shuǐ mǎ lóng', '车像流水，马像游龙。形容来往车马很多的热闹景象。', '《后汉书·明德马皇后纪》："前过濯龙门上，见外家问起居者，车如流水，马如游龙。"', '傍晚时分，这条商业街上车水马龙，人来人往。', '络绎不绝;川流不息', '门可罗雀;冷冷清清'],
+'瞠目结舌': ['chēng mù jié shé', '瞪着眼睛说不出话来。形容窘困或惊呆的样子。', '清·霁园主人《夜谭随录·梨花》："因耳语其故，公子大骇，入舱隐叩细君，细君亦瞠目结舌。"', '他提出的方案太过离谱，在场的同事个个瞠目结舌。', '目瞪口呆;张口结舌', '神色自若;泰然处之'],
+'乘风破浪': ['chéng fēng pò làng', '船只乘着风势破浪前进。比喻志向远大，不畏艰险，奋勇前进。', '《宋书·宗悫传》："悫年少时，炳问其志，悫曰：愿乘长风破万里浪。"', '这家初创公司乘风破浪，在短短两年内就占领了市场的一席之地。', '披荆斩棘;勇往直前', '裹足不前;畏缩不前'],
+'叱咤风云': ['chì zhà fēng yún', '一声呼喊就能使风云变色。形容威力极大。', '唐·骆宾王《代李敬业传檄天下文》："喑呜则山岳崩颓，叱咤则风云变色。"', '拿破仑曾是叱咤风云的人物，但最终也逃不过失败的命运。', '气吞山河;呼风唤雨', '无声无息;默默无闻'],
+'重峦叠嶂': ['chóng luán dié zhàng', '形容山岭重重叠叠，连绵不断。', '唐·徐光溥《题黄居寀秋山图》："秋来奉诏写秋山，写在轻绡数幅间；高低向背无遗势，重峦叠嶂何孱颜。"', '列车穿过重峦叠嶂的秦岭，沿途的风景美不胜收。', '崇山峻岭;千山万壑', '一马平川;平畴千里'],
+'初出茅庐': ['chū chū máo lú', '原比喻新露头脚。现比喻刚离开家庭或学校出来工作，缺乏经验。', '明·罗贯中《三国演义》第三十九回，写诸葛亮初出茅庐，博望坡用火攻大败曹军。', '虽然是初出茅庐的毕业生，但他表现出的专业素养令人刮目相看。', '初露头角;崭露头角', '老马识途;饱经世故'],
+'川流不息': ['chuān liú bù xī', '形容行人、车马等像水流一样连续不断。', '南朝·梁·周兴嗣《千字文》："川流不息，渊澄取映。"', '即使是深夜，这座不夜城的街道上依然车流川流不息。', '络绎不绝;纷至沓来', '门可罗雀;人迹罕至'],
+'触类旁通': ['chù lèi páng tōng', '掌握了某一事物的知识或规律，进而推知同类事物的知识或规律。', '《周易·系辞上》："引而伸之，触类而长之，天下之能事毕矣。"', '学习编程要善于触类旁通，掌握了一门语言的基础后，学其他语言就快多了。', '融会贯通;举一反三', '一窍不通;囫囵吞枣'],
+'吹毛求疵': ['chuī máo qiú cī', '吹开皮上的毛寻找疤痕。比喻故意挑剔别人的缺点。', '《韩非子·大体》："不吹毛而求小疵，不洗垢而察难知。"', '他这个人总是喜欢吹毛求疵，任何一点小问题都不放过。', '求全责备;洗垢求瘢', '宽宏大量;大而化之'],
+'春风化雨': ['chūn fēng huà yǔ', '适宜于草木生长的风雨。比喻良好的熏陶和教育。', '《孟子·尽心上》："有如时雨化之者。"', '老师的教诲如春风化雨，滋润着每个学生的心田。', '润物无声;言传身教', '揠苗助长;拔苗助长'],
+'唇齿相依': ['chún chǐ xiāng yī', '嘴唇和牙齿互相依靠。比喻关系密切，相互依靠。', '《三国志·魏书·鲍勋传》："王师屡征而未有所克者，盖以吴蜀唇齿相依，凭阻山水，有难拔之势故也。"', '这两个行业唇齿相依，一个发展了必然会带动另一个。', '休戚相关;唇亡齿寒', '风马牛不相及;毫不相干'],
+'殚精竭虑': ['dān jīng jié lǜ', '用尽精力，费尽心思。', '明·胡应麟《诗薮·古体》："若夫殚精竭虑，则子建、士衡为尤。"', '这位工程师殚精竭虑，花了三年时间才完成了这项创新设计。', '费尽心机;挖空心思', '无所用心;漫不经心'],
+'倒行逆施': ['dào xíng nì shī', '原指做事违反常理，现多指违背社会正义与时代潮流的行为。', '《史记·伍子胥列传》："吾日暮途远，吾故倒行而逆施之。"', '任何倒行逆施的行为，最终都会遭到人民的唾弃。', '逆天悖理;胡作非为', '顺天应人;循规蹈矩'],
+'等量齐观': ['děng liàng qí guān', '指对有差别的事物同等看待。', '清·周中孚《郑堂札记》卷五："若李沧溟者，亦当等量齐观。"', '这两件事性质完全不同，怎么能等量齐观呢？', '相提并论;同日而语', '厚此薄彼;另眼相看'],
+'鼎力相助': ['dǐng lì xiāng zhù', '大力相助。', '明·罗贯中《三国演义》第九十一回："孔明曰：吾欲久后以大事相托，今先以此相烦，公幸鼎力相助。"', '感谢各位朋友的鼎力相助，这次活动才能办得这么成功。', '竭尽全力;全力以赴', '袖手旁观;冷眼旁观'],
+'东山再起': ['dōng shān zài qǐ', '指退隐后再度出任要职。也比喻失势后重新得势。', '《晋书·谢安传》记载，谢安辞官隐居东山，后复出为官，建立大功。', '经历了破产之后，他用三年时间东山再起，重新建立了自己的商业帝国。', '卷土重来;重整旗鼓', '一蹶不振;万劫不复'],
+'独当一面': ['dú dāng yī miàn', '单独负责一个方面的工作。', '《史记·留侯世家》："而汉王之将，独韩信可属大事，当一面。"', '经过几年的历练，他已经能够独当一面，完全不需要上级时刻指导了。', '独立自主;单枪匹马', '仰人鼻息;寄人篱下'],
+'断章取义': ['duàn zhāng qǔ yì', '指不顾全篇文章或谈话的内容，孤立地取其中的一段或一句的意思。', '《左传·襄公二十八年》："赋诗断章，余取所求焉。"', '媒体报道时断章取义，完全歪曲了他的本意。', '望文生义;管中窥豹', '实事求是;追本溯源'],
+'耳濡目染': ['ěr rú mù rǎn', '耳朵经常听到，眼睛经常看到，不知不觉地受到影响。', '唐·韩愈《清河郡公房公墓碣铭》："公胚胎前光，生长食息，不离典训之内，目濡耳染，不学以能。"', '在音乐世家长大的她，耳濡目染，从小就对旋律有着非凡的敏感度。', '潜移默化;耳熟能详', '充耳不闻;视而不见'],
+'耳提面命': ['ěr tí miàn mìng', '不仅是当面告诉他，而且是提着他的耳朵跟他讲。形容长辈教导热心恳切。', '《诗经·大雅·抑》："匪面命之，言提其耳。"', '老师傅对徒弟耳提面命，把毕生的技艺毫无保留地传授给了他。', '谆谆告诫;苦口婆心', '不教而诛;放任自流'],
+'翻云覆雨': ['fān yún fù yǔ', '形容人反复无常或惯于耍手段。', '唐·杜甫《贫交行》："翻手作云覆手雨，纷纷轻薄何须数。"', '这个人翻云覆雨的手段了得，不到半年就把公司搅得天翻地覆。', '反复无常;朝三暮四', '始终如一;表里如一'],
+'方兴未艾': ['fāng xīng wèi ài', '事物正在发展，尚未达到止境。', '宋·陈亮《戊申再上孝宗皇帝书》："天下非有豪猾不可制之奸，虏人非有方兴未艾之势。"', '人工智能产业方兴未艾，未来还有巨大的发展空间。', '如日中天;蓬勃发展', '日暮途穷;穷途末路'],
+'防微杜渐': ['fáng wēi dù jiàn', '在坏思想、坏事或错误刚冒头时就加以制止，不让它发展。', '《后汉书·丁鸿传》："若敕政责躬，杜渐防萌，则凶妖销灭，害除福凑矣。"', '对于孩子的坏习惯，一定要防微杜渐，不能等到根深蒂固了再纠正。', '防患未然;未雨绸缪', '养痈成患;放任自流'],
+'飞黄腾达': ['fēi huáng téng dá', '比喻骤然得志，官职升得很快。', '唐·韩愈《符读书城南》诗："飞黄腾踏去，不能顾蟾蜍。"', '当年的穷小子如今已经飞黄腾达，成了行业里的风云人物。', '平步青云;青云直上', '一落千丈;穷困潦倒'],
+'废寝忘食': ['fèi qǐn wàng shí', '顾不得睡觉，忘记了吃饭。形容专心努力。', '北齐·颜之推《颜氏家训·勉学》："元帝在江荆间，复所爱习，故至于废寝忘食。"', '为了完成这篇论文，他已经废寝忘食地工作了好几个星期。', '夜以继日;通宵达旦', '饱食终日;无所事事'],
+'分道扬镳': ['fēn dào yáng biāo', '分路而行。比喻目标不同，各走各的路。', '《魏书·河间公齐传》："我之丰沛，自应分道扬镳。"', '由于理念不合，两位创始人最终分道扬镳，各自创办了新公司。', '各奔前程;背道而驰', '志同道合;并驾齐驱'],
+'风尘仆仆': ['fēng chén pú pú', '形容旅途奔波，忙碌劳累。', '元·尚仲贤《柳毅传书》第三折："你索是远路风尘的故人。"', '他风尘仆仆地从外地赶回来，连行李都没放就来参加会议了。', '鞍马劳顿;披星戴月', '养尊处优;悠哉游哉'],
+'风华正茂': ['fēng huá zhèng mào', '正是青春焕发、风采动人和才华横溢的时候。形容青年朝气蓬勃、奋发有为。', '毛泽东《沁园春·长沙》："恰同学少年，风华正茂；书生意气，挥斥方遒。"', '这群风华正茂的年轻人是公司未来的希望。', '朝气蓬勃;意气风发', '老态龙钟;风烛残年'],
+'凤毛麟角': ['fèng máo lín jiǎo', '凤凰的羽毛，麒麟的角。比喻珍贵而稀少的人或物。', '明·汪道昆《五湖游》："凤毛麟角，世不多见。"', '像他这样既懂技术又懂管理的人才，在整个行业里都是凤毛麟角。', '屈指可数;寥寥无几', '车载斗量;多如牛毛'],
+'釜底抽薪': ['fǔ dǐ chōu xīn', '把柴火从锅底抽掉。比喻从根本上解决问题。', '《吕氏春秋·数尽》："夫以汤止沸，沸愈不止，去其火则止矣。"', '与其扬汤止沸，不如釜底抽薪，从根本上解决这个矛盾。', '抽薪止沸;斩草除根', '扬汤止沸;火上浇油'],
+'刚愎自用': ['gāng bì zì yòng', '十分固执自信，不考虑别人的意见。', '《左传·宣公十二年》："其佐先縠，刚愎不仁，未肯用命。"', '这位经理刚愎自用，从不听取下属的建议，导致部门业绩不断下滑。', '固执己见;独断专行', '从善如流;虚怀若谷'],
+'高屋建瓴': ['gāo wū jiàn líng', '把瓶子里的水从高层顶上倾倒。比喻居高临下，不可阻遏。', '《史记·高祖本纪》："地势便利，其以下兵于诸侯，譬犹居高屋之上建瓴水也。"', '这篇评论高屋建瓴地分析了当前的经济形势，令人耳目一新。', '居高临下;势如破竹', '以卵击石;螳臂当车'],
+'功亏一篑': ['gōng kuī yī kuì', '堆九仞高的山，只缺一筐土而不能完成。比喻做事情只差最后一点没能完成。', '《尚书·旅獒》："为山九仞，功亏一篑。"', '眼看项目就要成功，却因为资金问题功亏一篑，大家都很不甘心。', '功败垂成;前功尽弃', '大功告成;功德圆满'],
+'孤注一掷': ['gū zhù yī zhì', '把所有的钱一次押上去。比喻倾尽全力冒险行事，以求侥幸成功。', '宋·辛弃疾《九议》："于是乎为国生事，而不为明主之所许，然卒亦不能以自固，则孤注一掷而已矣。"', '他把全部积蓄孤注一掷地投入了股市，这种做法实在是太冒险了。', '破釜沉舟;铤而走险', '稳扎稳打;步步为营'],
+'刮目相看': ['guā mù xiāng kàn', '指别人已有进步，不能再用老眼光去看他。', '《三国志·吴书·吕蒙传》裴松之注引《江表传》："士别三日，即更刮目相待。"', '一年不见，他的英语水平进步神速，令人刮目相看。', '另眼相看;刮目相待', '等量齐观;一视同仁'],
+'管中窥豹': ['guǎn zhōng kuī bào', '从竹管的小孔里看豹，只看到豹身上的一块斑纹。比喻只看到事物的一部分，所见不全面。', '南朝·宋·刘义庆《世说新语·方正》："此郎亦管中窥豹，时见一斑。"', '仅凭一篇报道就下结论，无异于管中窥豹，太过片面了。', '坐井观天;以蠡测海', '一目了然;洞若观火'],
+'光怪陆离': ['guāng guài lù lí', '形容奇形怪状，五颜六色。', '汉·刘向《说苑·辨物》："五采争胜，流漫陆离。"', '夜晚的霓虹灯光怪陆离，将整座城市装点得如梦似幻。', '五彩缤纷;斑驳陆离', '黯淡无光;单调乏味'],
+'鬼斧神工': ['guǐ fǔ shén gōng', '像是鬼神制作出来的。形容艺术技巧高超，不是人力所能达到的。', '《庄子·达生》："梓庆削木为鐻，鐻成，见者惊犹鬼神。"', '这座千年石窟的雕刻堪称鬼斧神工，每一处细节都令人叹为观止。', '巧夺天工;出神入化', '粗制滥造;平淡无奇'],
+'海市蜃楼': ['hǎi shì shèn lóu', '原指海边或沙漠中，由于光线的反射和折射，空中或地面出现虚幻的楼台城郭。比喻虚无缥缈的事物。', '《史记·天官书》："海旁蜃气象楼台。"', '他那不切实际的计划不过是海市蜃楼，根本不可能实现。', '空中楼阁;镜花水月', '真真切切;实实在在'],
+'邯郸学步': ['hán dān xué bù', '比喻模仿人不到家，反把原来自己会的东西忘了。', '《庄子·秋水》记载，燕国少年到赵国邯郸学走路，结果没学会邯郸人的步伐，反而忘了自己原来的走法，只好爬着回去。', '学习国外经验要结合自身实际，不能邯郸学步，丢了自己的优势。', '东施效颦;鹦鹉学舌', '独辟蹊径;自成一格'],
+'含英咀华': ['hán yīng jǔ huá', '比喻读书吸取其精华。', '唐·韩愈《进学解》："沉浸醲郁，含英咀华。"', '读书要懂得含英咀华，才能从经典中汲取到真正的智慧。', '细嚼慢咽;取其精华', '囫囵吞枣;生吞活剥'],
+'汗牛充栋': ['hàn niú chōng dòng', '书运输时牛累得出汗，存放时可堆至屋顶。形容藏书非常多。', '唐·柳宗元《陆文通先生墓表》："其为书，处则充栋宇，出则汗牛马。"', '老先生家的藏书汗牛充栋，整整两层楼都摆满了书籍。', '浩如烟海;不计其数', '屈指可数;寥寥无几'],
+'沆瀣一气': ['hàng xiè yī qì', '比喻臭味相投的人结合在一起。', '宋·钱易《南部新书·戊集》记载，唐僖宗时，崔沆为主考官，录取了崔瀣，时人嘲笑说："座主门生，沆瀣一气。"', '这几个不良商人沆瀣一气，联手操纵了市场价格。', '臭味相投;狼狈为奸', '肝胆相照;志同道合'],
+'涸辙之鲋': ['hé zhé zhī fù', '水干了的车沟里的小鱼。比喻在困境中急待援救的人。', '《庄子·外物》记载，庄子在路上听到车辙中有鲫鱼呼救，鱼说："我东海之波臣也，君岂有斗升之水而活我哉？"', '这家公司如今已是涸辙之鲋，急需一笔资金来周转。', '瓮中之鳖;奄奄一息', '如鱼得水;得心应手'],
+'鹤立鸡群': ['hè lì jī qún', '像鹤站在鸡群中一样。比喻一个人的仪表或才能在周围一群人里显得很突出。', '晋·戴逵《竹林七贤论》："嵇绍入洛，或谓王戎曰：昨于稠人中始见嵇绍，昂昂然若野鹤之在鸡群。"', '在众多应聘者中，他鹤立鸡群的表现给面试官留下了深刻的印象。', '出类拔萃;超群绝伦', '滥竽充数;鱼目混珠'],
+'恒河沙数': ['héng hé shā shù', '像恒河里的沙粒一样多。形容数量极多。', '《金刚经·无为福胜分第十一》："但诸恒河尚多无数，何况其沙。"', '宇宙中的恒星如同恒河沙数，人类目前观测到的只是冰山一角。', '不计其数;多如牛毛', '寥若晨星;屈指可数'],
+'画蛇添足': ['huà shé tiān zú', '画蛇时给蛇添上脚。比喻做了多余的事，非但无益，反而不合适。', '《战国策·齐策二》记载，楚国有人画蛇，先画好的人给蛇添上脚，反而输了酒。', '这篇文章的结尾已经写得很好了，再加一段反而画蛇添足。', '多此一举;弄巧成拙', '画龙点睛;恰到好处'],
+'讳疾忌医': ['huì jí jì yī', '隐瞒疾病，不愿医治。比喻怕人批评而掩饰自己的缺点和错误。', '宋·周敦颐《通书·过》："今人有过，不喜人规，如护疾而忌医。"', '公司经营出了问题并不可怕，可怕的是讳疾忌医，不肯面对现实。', '文过饰非;掩耳盗铃', '闻过则喜;从善如流'],
+'集腋成裘': ['jí yè chéng qiú', '狐狸腋下的皮虽很小，但聚集起来就能制一件皮袍。比喻积少成多。', '《慎子·知忠》："狐白之裘，盖非一狐之腋也。"', '慈善事业靠的是众人拾柴火焰高，集腋成裘，每一分钱都很重要。', '聚沙成塔;积少成多', '杯水车薪;九牛一毛'],
+'既往不咎': ['jì wǎng bù jiù', '对过去的错误不再责备追究。', '《论语·八佾》："成事不说，遂事不谏，既往不咎。"', '只要你诚心悔改，公司可以既往不咎，给你一个重新开始的机会。', '宽大为怀;不念旧恶', '睚眦必报;耿耿于怀'],
+'矫枉过正': ['jiǎo wǎng guò zhèng', '把弯的东西扳正，又歪到了另一边。比喻纠正错误超过了应有的限度。', '《后汉书·仲长统传》："逮至清世，则复入于矫枉过正之检。"', '教育孩子不能太宽松，但过于严厉也是矫枉过正了。', '过犹不及;欲速不达', '恰到好处;适可而止'],
+'竭泽而渔': ['jié zé ér yú', '把池水抽干去捕鱼。比喻只顾眼前利益，不作长远打算。', '《吕氏春秋·义赏》："竭泽而渔，岂不获得，而明年无鱼。"', '过度开发自然资源无异于竭泽而渔，会给子孙后代留下无穷的隐患。', '焚林而猎;杀鸡取卵', '从长计议;高瞻远瞩'],
+'精卫填海': ['jīng wèi tián hǎi', '精卫鸟衔木石填东海。比喻意志坚决，不畏艰难。', '《山海经·北山经》记载，炎帝之女女娃溺死于东海，化为精卫鸟，常衔西山之木石以填东海。', '他以精卫填海般的毅力攻克了这个技术难题。', '愚公移山;矢志不渝', '半途而废;有始无终'],
+'鸠占鹊巢': ['jiū zhàn què cháo', '斑鸠不会做窠，常强占喜鹊的窠。比喻强占别人的住屋。', '《诗经·召南·鹊巢》："维鹊有巢，维鸠居之。"', '这个租客鸠占鹊巢，不仅不交房租还拒绝搬走。', '反客为主;喧宾夺主', '物归原主;完璧归赵'],
+'举案齐眉': ['jǔ àn qí méi', '送饭时把托盘举得跟眉毛一样高。形容夫妻互相尊敬。', '《后汉书·梁鸿传》："为人赁舂，每归，妻为具食，不敢于鸿前仰视，举案齐眉。"', '他们结婚三十年，始终相敬如宾、举案齐眉。', '相敬如宾;伉俪情深', '反目成仇;同床异梦'],
+'举一反三': ['jǔ yī fǎn sān', '从一件事情类推而知道其他许多事情。', '《论语·述而》："举一隅不以三隅反，则不复也。"', '聪明的学生善于举一反三，老师讲一个例子他就能想到很多类似的情况。', '触类旁通;闻一知十', '一窍不通;囫囵吞枣'],
+'开诚布公': ['kāi chéng bù gōng', '以诚心待人，坦白无私。', '《三国志·蜀书·诸葛亮传》："诸葛亮之为相国也……开诚心，布公道。"', '希望双方能开诚布公地沟通，这样问题才能得到真正的解决。', '推心置腹;坦诚相待', '尔虞我诈;勾心斗角'],
+'刻舟求剑': ['kè zhōu qiú jiàn', '比喻不懂事物已发展变化而仍静止地看问题。', '《吕氏春秋·察今》记载，楚国有人渡江时剑落水中，他在船上刻了个记号，等船停了从记号处下水找剑。', '时代已经变了，你还用十年前的思路来考虑问题，这不是刻舟求剑吗？', '守株待兔;胶柱鼓瑟', '因时制宜;随机应变'],
+'空谷足音': ['kōng gǔ zú yīn', '在寂静的山谷里听到脚步声。比喻极难得的音信、言论或事物。', '《诗经·小雅·白驹》："皎皎白驹，在彼空谷。"', '在物欲横流的时代，这样真诚的作品犹如空谷足音，弥足珍贵。', '凤毛麟角;寥寥无几', '比比皆是;层出不穷'],
+'扣人心弦': ['kòu rén xīn xián', '形容事物激动人心。', '魏巍《东方》第二部第七章："据说这人最不爱讲话，但那天的几句话，却是那样扣人心弦，感动得自己当时流下了眼泪。"', '这场足球比赛踢得扣人心弦，直到最后一分钟才分出胜负。', '动人心魄;激动人心', '平淡无奇;索然无味'],
+'老马识途': ['lǎo mǎ shí tú', '老马认识路。比喻有经验的人对事情比较熟悉。', '《韩非子·说林上》记载，管仲跟随齐桓公攻打孤竹国，春天去冬天回，迷了路，管仲说老马之智可用，于是放老马在前面走，找到了路。', '老马识途，这个项目还是请王工来做顾问吧，他有三十年的行业经验。', '驾轻就熟;轻车熟路', '初出茅庐;少不更事'],
+'良莠不齐': ['liáng yǒu bù qí', '好人坏人都有，混杂在一起。', '清·李宝嘉《官场现形记》第五十六回："且说彼时捐例大开，各省候选人员十分拥挤，其中良莠不齐。"', '网上的信息来源良莠不齐，我们需要学会辨别真伪。', '鱼龙混杂;泥沙俱下', '泾渭分明;黑白分明'],
+'琳琅满目': ['lín láng mǎn mù', '满眼都是珍贵的东西。形容美好的事物很多。', '南朝·宋·刘义庆《世说新语·容止》："今日之行，触目见琳琅珠玉。"', '书展上的各类图书琳琅满目，让人目不暇接。', '美不胜收;目不暇接', '满目疮痍;百孔千疮'],
+'流连忘返': ['liú lián wàng fǎn', '玩乐时留恋不愿离去。', '《孟子·梁惠王下》："从流下而忘反谓之流，从流上而忘反谓之连。"', '桂林的山水太美了，让人流连忘返。', '乐不思蜀;流连不舍', '归心似箭;迫不及待'],
+'屡见不鲜': ['lǚ jiàn bù xiān', '多次见到，不觉得新鲜了。', '《史记·郦生陆贾列传》："一岁中往来过他客，率不过再三过，数见不鲜。"', '在当今社会，跨国婚姻已经屡见不鲜了。', '司空见惯;习以为常', '少见多怪;前所未有'],
+'马革裹尸': ['mǎ gé guǒ shī', '用马皮把尸体包裹起来。指英勇牺牲在战场。', '《后汉书·马援传》："男儿要当死于边野，以马革裹尸还葬耳。"', '将士们立下马革裹尸的誓言，誓死保卫祖国的每一寸领土。', '视死如归;捐躯报国', '贪生怕死;临阵脱逃'],
+'满目疮痍': ['mǎn mù chuāng yí', '眼睛看到的都是创伤。形容遭受战乱、灾祸严重破坏的景象。', '《旧唐书·昭宗纪》："四海之内，满目疮痍。"', '地震后的城市满目疮痍，救灾工作刻不容缓。', '百孔千疮;断壁残垣', '琳琅满目;锦绣山河'],
+'毛遂自荐': ['máo suì zì jiàn', '毛遂自我推荐。比喻自告奋勇，自己推荐自己。', '《史记·平原君虞卿列传》记载，秦国攻打赵国，平原君要挑二十个门客去楚国求援，毛遂自己推荐自己跟去了。', '看到公司有海外项目的机会，他毛遂自荐，主动申请去开拓市场。', '自告奋勇;挺身而出', '推三阻四;退避三舍'],
+'门庭若市': ['mén tíng ruò shì', '门口和庭院里热闹得像市场一样。形容交际来往的人很多。', '《战国策·齐策一》："群臣进谏，门庭若市。"', '这家餐厅自从上了美食节目后，每天门庭若市，排队都要一两个小时。', '车水马龙;络绎不绝', '门可罗雀;冷冷清清'],
+'妙笔生花': ['miào bǐ shēng huā', '比喻杰出的写作才能。', '五代·王仁裕《开元天宝遗事·梦笔头生花》记载，李白少年时梦见笔头生花，后来文采出众，名闻天下。', '这篇散文妙笔生花，读起来如品香茗，回味无穷。', '笔走龙蛇;文采斐然', '江郎才尽;平淡无奇'],
+'名不虚传': ['míng bù xū chuán', '传出的名声不是虚假的。指实在很好，不是空有虚名。', '《史记·游侠列传》："然其私义廉洁退让，有足称者。名不虚言，士不虚附。"', '这家的烤鸭果然名不虚传，外酥里嫩，入口即化。', '名副其实;名下无虚', '名不副实;有名无实'],
+'目不暇接': ['mù bù xiá jiē', '指东西很多，眼睛都看不过来。', '唐·韩愈《南山诗》："时天晦大雪，泪目苦蒙瞀。"', '博物馆里的展品太丰富了，让人目不暇接。', '应接不暇;琳琅满目', '一目了然;一览无余'],
+'抛砖引玉': ['pāo zhuān yǐn yù', '抛出砖头，引来白玉。比喻用自己不成熟的意见引出别人更好的意见。', '宋·释道原《景德传灯录》卷十："比来抛砖引玉，却引得个坠子。"', '我先抛砖引玉谈几点看法，希望能听到大家更深入的见解。', '投砾引珠;引玉之砖', '守口如瓶;闭口不言'],
+'匹夫之勇': ['pǐ fū zhī yǒng', '指不用智谋单凭个人的勇力。', '《孟子·梁惠王下》："此匹夫之勇，敌一人者也。"', '面对强大的对手，仅凭匹夫之勇是远远不够的，还需要周密的策略。', '有勇无谋;血气之勇', '智勇双全;有勇有谋'],
+'扑朔迷离': ['pū shuò mí lí', '形容事情错综复杂，不容易看清真相。', '《木兰诗》："雄兔脚扑朔，雌兔眼迷离；双兔傍地走，安能辨我是雄雌。"', '这起案件的真相扑朔迷离，警方正在进行深入调查。', '错综复杂;眼花缭乱', '一目了然;清晰明了'],
+'期期艾艾': ['qī qī ài ài', '形容口吃的人说话不流利。', '《史记·张丞相列传》："昌为人口吃，又盛怒，曰：臣口不能言，然臣期期知其不可。"；又《世说新语·言语》："邓艾口吃，语称艾艾。"', '见到心仪的女生，他紧张得期期艾艾，连自己的名字都说不清楚了。', '结结巴巴;吞吞吐吐', '口若悬河;侃侃而谈'],
+'巧夺天工': ['qiǎo duó tiān gōng', '人工的精巧胜过天然。形容技艺十分巧妙。', '晋·郭璞《葬书》："微妙在智，触类而长，玄通阴阳，巧夺造化。"', '这件翡翠玉雕巧夺天工，每一根羽毛都雕刻得栩栩如生。', '鬼斧神工;精益求精', '粗制滥造;制作粗劣'],
+'青出于蓝': ['qīng chū yú lán', '青从蓝草中提炼出来，颜色比蓝更深。比喻学生超过老师。', '《荀子·劝学》："青，取之于蓝，而青于蓝。"', '他的学生后来成为了世界冠军，真是青出于蓝而胜于蓝。', '后来居上;冰寒于水', '每况愈下;一代不如一代'],
+'穷兵黩武': ['qióng bīng dú wǔ', '随意使用武力，不断发动侵略战争。形容极其好战。', '《三国志·吴书·陆抗传》："而听诸将徇名，穷兵黩武。"', '侵略者穷兵黩武，最终还是被爱好和平的人民打败了。', '穷奢极欲;大动干戈', '和平共处;偃武修文'],
+'趋之若鹜': ['qū zhī ruò wù', '像鸭子一样成群跑过去。比喻很多人争着追逐某事物。', '清·李宝嘉《官场现形记》第三十五回："一班买办见有这等好差使，便个个趋之若鹜。"', '这款限量版球鞋刚上市，球鞋爱好者便趋之若鹜，瞬间抢购一空。', '争先恐后;蜂拥而至', '无人问津;门可罗雀'],
+'人满为患': ['rén mǎn wéi huàn', '人太多成为了麻烦。', '清·李宝嘉《官场现形记》第五十六回："里面人满为患，不堪驻足。"', '黄金周的景区人满为患，建议大家错峰出行。', '摩肩接踵;络绎不绝', '门可罗雀;廖廖无几'],
+'人言可畏': ['rén yán kě wèi', '人们的流言蜚语是很可怕的。', '《诗经·郑风·将仲子》："人之多言，亦可畏也。"', '人言可畏，他担心自己的一时失言会引来不必要的麻烦。', '众口铄金;积毁销骨', '流言蜚语;不攻自破'],
+'任重道远': ['rèn zhòng dào yuǎn', '担子很重，路很远。比喻责任重大，要经历长期的奋斗。', '《论语·泰伯》："士不可以不弘毅，任重而道远。"', '环保事业任重道远，需要全人类共同付出不懈努力。', '负重致远;举足轻重', '轻而易举;不足挂齿'],
+'如火如荼': ['rú huǒ rú tú', '像火那样红，像荼那样白。原比喻军容之盛。现用来形容大规模的行动气势旺盛。', '《国语·吴语》："万人以为方阵，皆白裳、白旂、素甲、白羽之矰，望之如荼……左军亦如之，皆赤裳、赤旟、丹甲、朱羽之矰，望之如火。"', '全民健身运动正在如火如荼地展开。', '热火朝天;方兴未艾', '无声无息;每况愈下'],
+'如履薄冰': ['rú lǚ bó bīng', '像走在薄冰上一样。比喻行事极为谨慎，存有戒心。', '《诗经·小雅·小旻》："战战兢兢，如临深渊，如履薄冰。"', '身处复杂的职场环境，他每天都如履薄冰，生怕做错什么。', '小心翼翼;谨小慎微', '胆大妄为;肆意妄为'],
+'入木三分': ['rù mù sān fēn', '形容书法极有笔力。现多比喻分析问题很深刻。', '唐·张怀瓘《书断·王羲之》记载，王羲之在木板上写字，刻字的人发现墨汁渗入木板有三分深。', '鲁迅先生对国民性的剖析入木三分。', '鞭辟入里;力透纸背', '蜻蜓点水;隔靴搔痒'],
+'塞翁失马': ['sài wēng shī mǎ', '比喻一时虽然受到损失，也许反而因此能得到好处。', '《淮南子·人间训》记载，边塞老翁丢了马，别人来安慰他，他说怎么知道不是福呢？后来马带回了一匹骏马。', '这次考试失利也许塞翁失马，反而让他认识到了自己的不足，更加努力了。', '因祸得福;转危为安', '雪上加霜;祸不单行'],
+'三人成虎': ['sān rén chéng hǔ', '三个人谎报城市里有老虎，听的人就信以为真。比喻谣言多人重复就能让人相信。', '《战国策·魏策二》："夫市之无虎明矣，然而三人言而成虎。"', '网络上关于这件事的谣言三人成虎，越来越多的人开始相信了。', '以讹传讹;众口铄金', '眼见为实;实事求是'],
+'三心二意': ['sān xīn èr yì', '又想这样又想那样，犹豫不决。常指不安心，不专一。', '元·关汉卿《救风尘》第一折："争奈是匪妓，都三心二意。"', '做任何事情都不能三心二意，否则很难有所成就。', '犹豫不决;心猿意马', '一心一意;专心致志'],
+'杀鸡取卵': ['shā jī qǔ luǎn', '为了要得到鸡蛋，把鸡杀了。比喻贪图眼前的好处而不顾长远利益。', '《伊索寓言》中有杀鹅取金蛋的故事。', '为了短期利润而忽视产品质量，无异于杀鸡取卵。', '竭泽而渔;涸泽而渔', '深谋远虑;高瞻远瞩'],
+'姗姗来迟': ['shān shān lái chí', '形容走得缓慢从容，慢腾腾地来晚了。', '《汉书·外戚传上·孝武李夫人传》："是邪，非邪？立而望之，偏何姗姗其来迟。"', '大家都在等他一个人，他却姗姗来迟，连句道歉的话都没有。', '慢条斯理;蜗行牛步', '捷足先登;争先恐后'],
+'舍本逐末': ['shě běn zhú mò', '放弃根本的而去追求细枝末节。比喻不抓根本环节。', '《吕氏春秋·上农》："民舍本而事末则不令，不令则不可以守，不可以战。"', '为了美观而牺牲安全性能，这种舍本逐末的做法不可取。', '本末倒置;买椟还珠', '正本清源;追本溯源'],
+'事半功倍': ['shì bàn gōng bèi', '只用一半的力气，收到加倍的功效。形容费力小而收效大。', '《孟子·公孙丑上》："故事半古之人，功必倍之。"', '掌握了正确的学习方法，学习就能事半功倍。', '一举两得;以少胜多', '事倍功半;徒劳无功'],
+'拭目以待': ['shì mù yǐ dài', '擦亮眼睛等着瞧。形容期望很迫切。也表示确信某事一定会出现。', '明·罗贯中《三国演义》第四十三回："朝廷旧臣，山林隐士，无不拭目以待。"', '这项新技术能否改变行业格局，大家拭目以待。', '翘首以待;刮目相待', '不屑一顾;漠不关心'],
+'手不释卷': ['shǒu bù shì juàn', '书本不离手。形容勤奋好学。', '《三国志·吴书·吕蒙传》裴松之注引《江表传》："光武当兵马之务，手不释卷。"', '他从小就手不释卷，这也是他知识如此渊博的原因。', '孜孜不倦;学而不厌', '不学无术;游手好闲'],
+'守株待兔': ['shǒu zhū dài tù', '比喻死守狭隘经验，不知变通。', '《韩非子·五蠹》记载，宋国有个农夫见一只兔子撞在树桩上死了，便放下农具守在树桩旁，希望再得到兔子。', '机会不会自己送上门来，守株待兔的心态只会让你一事无成。', '刻舟求剑;墨守成规', '随机应变;通权达变'],
+'首当其冲': ['shǒu dāng qí chōng', '比喻最先受到攻击或遭到灾难。', '《汉书·五行志下》："郑当其冲，不能修德。"', '台风登陆后，沿海地区首当其冲，遭受了严重损失。', '一马当先', '置身事外;袖手旁观'],
+'束之高阁': ['shù zhī gāo gé', '捆起来以后放在高高的架子上。比喻放着不用。', '《晋书·庾翼传》："此辈宜束之高阁，俟天下太平，然后议其任耳。"', '提了那么多好建议，结果全被领导束之高阁了。', '置之不理;置之度外', '爱不释手;奉为圭臬'],
+'水到渠成': ['shuǐ dào qú chéng', '水流到的地方自然形成一条水道。比喻条件成熟，事情自然会成功。', '宋·朱熹《答路德章书》："所谓水到渠成之说，意思毕竟在渠上。"', '你只要坚持努力，一切都会水到渠成的。', '瓜熟蒂落;顺理成章', '欲速不达;拔苗助长'],
+'司空见惯': ['sī kōng jiàn guàn', '指某事常见，不足为奇。', '唐·孟棨《本事诗·情感》记载，刘禹锡作诗"司空见惯浑闲事，断尽江南刺史肠"。', '在地铁上看到有人低着头玩手机，已经是一件司空见惯的事情了。', '屡见不鲜;习以为常', '少见多怪;骇人听闻'],
+'四面楚歌': ['sì miàn chǔ gē', '比喻陷入四面受敌、孤立无援的境地。', '《史记·项羽本纪》记载，项羽被刘邦围困在垓下，夜间听到四面汉军都唱着楚歌，大惊失色。', '由于决策失误，公司陷入了四面楚歌的困境。', '腹背受敌;走投无路', '左右逢源;如鱼得水'],
+'随波逐流': ['suí bō zhú liú', '随着波浪起伏，顺着流水漂荡。比喻没有坚定的立场，缺乏判断是非的能力。', '《史记·屈原贾生列传》："举世混浊而我独清，众人皆醉而我独醒。"', '在时尚的浪潮中，她从不随波逐流，始终保持着独特的个人风格。', '同流合污;人云亦云', '特立独行;坚定不移'],
+'叹为观止': ['tàn wéi guān zhǐ', '指赞美所见到的事物好到了极点。', '《左传·襄公二十九年》记载，吴国季札在鲁国看乐舞，看到舜乐时说："观止矣，若有他乐，吾不敢请已。"', '敦煌莫高窟的壁画精美绝伦，令人叹为观止。', '拍案叫绝;赞不绝口', '嗤之以鼻;不以为然'],
+'天马行空': ['tiān mǎ xíng kōng', '天马奔腾神速，像是腾起在空中飞行一样。比喻诗文气势豪放。也比喻人浮躁，不踏实。', '明·刘廷振《萨天锡诗集序》："其所以神化而超出于众表者，殆犹天马行空而步骤不凡。"', '这位作家的想象力天马行空，笔下的世界令人无限向往。', '挥洒自如;豪放不羁', '束手束脚;墨守成规'],
+'脱颖而出': ['tuō yǐng ér chū', '锥尖透过布囊显露出来。比喻本领全部显露出来。', '《史记·平原君虞卿列传》："使遂早得处囊中，乃颖脱而出。"', '在众多参赛者中，她凭借独特的嗓音脱颖而出，获得了冠军。', '崭露头角;锋芒毕露', '不露圭角;湮没无闻'],
+'完璧归赵': ['wán bì guī zhào', '本指蔺相如将和氏璧完好地自秦送回赵国。后比喻把原物完好地归还本人。', '《史记·廉颇蔺相如列传》记载，蔺相如带着和氏璧出使秦国，识破秦王诡计，将和氏璧完好送回赵国。', '借给你的书看完了，现在完璧归赵。', '物归原主;合浦珠还', '据为己有;久借不归'],
+'万马齐喑': ['wàn mǎ qí yīn', '所有的马都沉寂无声。比喻人们都沉默，不敢发表意见。', '宋·苏轼《三马图赞》："时西域贡马……振鬣长鸣，万马齐喑。"', '这样的学术讨论会不应该是万马齐喑的局面，希望大家畅所欲言。', '噤若寒蝉;鸦雀无声', '百家争鸣;畅所欲言'],
+'望尘莫及': ['wàng chén mò jí', '望见前面骑马的人走过扬起的尘土而不能赶上。比喻远远落在后面。', '《后汉书·赵咨传》："今敦煌曹皓，咨之故孝廉也，迎路谒候，咨不为留。皓送至亭次，望尘不及。"', '他在编程方面的技术水平让我望尘莫及。', '不可企及;瞠乎其后', '并驾齐驱;迎头赶上'],
+'望梅止渴': ['wàng méi zhǐ kě', '原意是梅子酸，人想吃梅子就会流涎，因而止渴。后比喻愿望无法实现，用空想安慰自己。', '南朝·宋·刘义庆《世说新语·假谲》记载，曹操行军途中找不到水源，士兵们口渴难耐，曹操说前面有大片梅林，士兵们想到梅子的酸味都流出了口水，暂时缓解了口渴。', '买不起房就看房产广告，不过是望梅止渴罢了。', '画饼充饥;聊以自慰', '名副其实;脚踏实地'],
+'尾大不掉': ['wěi dà bù diào', '尾巴太大，掉转不灵。旧时比喻部下的势力很大，无法指挥调度。', '《左传·昭公十一年》："末大必折，尾大不掉。"', '公司旗下的子公司已经尾大不掉，总部对其已经失去了有效控制。', '末大不掉;强枝弱干', '如臂使指;运用自如'],
+'唯唯诺诺': ['wéi wéi nuò nuò', '形容自己没有主意，一味附和，恭顺听从的样子。', '《韩非子·八奸》："此人主未命而唯唯，未使而诺诺。"', '在老板面前他唯唯诺诺，在手下面前却趾高气扬。', '唯命是从;俯首帖耳', '不卑不亢;据理力争'],
+'娓娓道来': ['wěi wěi dào lái', '连续不断地说。形容谈论不倦或说话动听。', '明·宋濂《王冕传》："操笔立就，娓娓数百言。"', '导游将古城的历史娓娓道来，游客们听得津津有味。', '侃侃而谈;滔滔不绝', '期期艾艾;语无伦次'],
+'未雨绸缪': ['wèi yǔ chóu móu', '趁着天没下雨，先修缮房屋门窗。比喻事先做好准备工作。', '《诗经·豳风·鸱鸮》："迨天之未阴雨，彻彼桑土，绸缪牖户。"', '台风季快到了，我们要未雨绸缪，提前做好防汛准备。', '有备无患;防患未然', '临渴掘井;临阵磨枪'],
+'闻鸡起舞': ['wén jī qǐ wǔ', '听到鸡叫就起来舞剑。比喻有志报国的人及时奋起。', '《晋书·祖逖传》记载，祖逖与刘琨同寝，半夜听到鸡鸣，祖逖踢醒刘琨说："此非恶声也。"于是两人起床舞剑。', '他每天早上五点就闻鸡起舞，开始一天的训练。', '夙兴夜寐;发愤图强', '饱食终日;好逸恶劳'],
+'无独有偶': ['wú dú yǒu ǒu', '不只一个，竟然还有配对的。', '清·梁绍壬《两般秋雨盦随笔·禁宰犬考》："无独有偶，自古已然。"', 'A公司破产了，无独有偶，B公司也因为同样的原因濒临倒闭。', '成双成对;接二连三', '独一无二;举世无双'],
+'先入为主': ['xiān rù wéi zhǔ', '先听进去的话或先获得的印象往往在头脑中占有主导地位。', '《汉书·息夫躬传》："唯陛下观览古戒，反复参考，无以先入之语为主。"', '第一印象往往会先入为主，影响我们对一个人的整体判断。', '先入之见;偏听偏信', '实事求是;兼听则明'],
+'相得益彰': ['xiāng dé yì zhāng', '两个人或两件事物互相配合，双方的能力和作用更能显示出来。', '汉·王褒《圣主得贤臣颂》："聚精会神，相得益章。"', '优美的旋律配上诗意的歌词，两者相得益彰，使这首歌成为了经典。', '相辅相成;相映成趣', '相形见绌;两败俱伤'],
+'宵衣旰食': ['xiāo yī gàn shí', '天不亮就穿衣起床，天黑了才吃饭。形容勤于政务。', '《旧唐书·刘蕡传》："若夫任贤惕厉，宵衣旰食。"', '为了完成这项民生工程，市长宵衣旰食，日夜操劳。', '夙兴夜寐;废寝忘食', '饱食终日;无所事事'],
+'心猿意马': ['xīn yuán yì mǎ', '心意像猴子跳、马奔跑一样控制不住。形容心里东想西想，安静不下来。', '汉·魏伯阳《参同契》注："心猿不定，意马四驰。"', '马上就要考试了，他却心猿意马，怎么也看不进书。', '心不在焉;三心二意', '专心致志;聚精会神'],
+'栩栩如生': ['xǔ xǔ rú shēng', '指艺术形象非常逼真，如同活的一样。', '《庄子·齐物论》："昔者庄周梦为蝴蝶，栩栩然蝴蝶也。"', '这幅肖像画画得栩栩如生，仿佛画中的人物下一秒就会从画布上走下来。', '活灵活现;惟妙惟肖', '面目全非;似是而非'],
+'揠苗助长': ['yà miáo zhù zhǎng', '把苗拔起来帮助它生长。比喻违反事物发展规律，急于求成。', '《孟子·公孙丑上》记载，宋国有个人嫌禾苗长得太慢，就把苗一棵棵拔高，结果苗都枯死了。', '教育孩子不能揠苗助长，要遵循他们的成长规律。', '欲速不达;弄巧成拙', '循序渐进;顺其自然'],
+'言简意赅': ['yán jiǎn yì gāi', '话不多，但意思都有了。形容说话写文章简明扼要。', '宋·张端义《贵耳集》卷上："言简意尽，遂为通论。"', '这篇报告言简意赅，只用了一页纸就把所有要点都说清楚了。', '要言不烦;简明扼要', '长篇累牍;废话连篇'],
+'叶公好龙': ['yè gōng hào lóng', '比喻口头上说爱好某事物，实际上并不真爱好。', '汉·刘向《新序·杂事五》记载，叶公子高非常喜欢龙，家里到处都画着龙，但当真龙来拜访他时，他却吓得魂飞魄散。', '他嘴上说热爱艺术，却连一场画展都没去过，不过是叶公好龙罢了。', '口是心非;附庸风雅', '真心实意;名副其实'],
+'一鸣惊人': ['yī míng jīng rén', '比喻平时没有突出的表现，一下子做出惊人的成绩。', '《韩非子·喻老》："虽无飞，飞必冲天；虽无鸣，鸣必惊人。"', '这位新人的首张专辑一鸣惊人，迅速登上了各大音乐榜单的榜首。', '一飞冲天;一举成名', '默默无闻;碌碌无为'],
+'一诺千金': ['yī nuò qiān jīn', '许下的一个诺言有千金的价值。比喻说话算数，极有信用。', '《史记·季布栾布列传》："得黄金百斤，不如得季布一诺。"', '他做生意一诺千金，客户都愿意和他长期合作。', '言而有信;一言九鼎', '出尔反尔;言而无信'],
+'以邻为壑': ['yǐ lín wéi hè', '拿邻国当做大水坑，把本国的洪水排泄到那里去。比喻只图自己一方的利益，把困难或祸害转嫁给别人。', '《孟子·告子下》："禹之治水，水之道也，是故禹以四海为壑。今吾子以邻国为壑。"', '这种以邻为壑的做法不仅损害了友商，最终也会损害自己的声誉。', '嫁祸于人;损人利己', '守望相助;同舟共济'],
+'意气风发': ['yì qì fēng fā', '形容精神振奋，气概豪迈。', '三国·魏·曹植《魏德论》："武皇之兴也，以道凌残，义气风发。"', '这群大学毕业生意气风发地踏上了人生新的征程。', '精神抖擞;神采飞扬', '萎靡不振;垂头丧气'],
+'游刃有余': ['yóu rèn yǒu yú', '刀刃运转于骨节空隙中，还有回旋的余地。比喻工作熟练，有实际经验，解决问题毫不费事。', '《庄子·养生主》："彼节者有间，而刀刃者无厚。以无厚入有间，恢恢乎其于游刃必有余地矣。"', '做了三十年的老会计，处理这样的账目对他来说简直游刃有余。', '得心应手;驾轻就熟', '力不从心;捉襟见肘'],
+'鱼目混珠': ['yú mù hùn zhū', '拿鱼眼睛冒充珍珠。比喻用假的冒充真的。', '汉·魏伯阳《参同契》上篇："鱼目岂为珠，蓬蒿不成槚。"', '市面上有不少假冒伪劣产品鱼目混珠，消费者一定要擦亮眼睛。', '以假乱真;滥竽充数', '货真价实;真材实料'],
+'缘木求鱼': ['yuán mù qiú yú', '爬到树上去找鱼。比喻方法不对，不可能达到目的。', '《孟子·梁惠王上》："以若所为，求若所欲，犹缘木而求鱼也。"', '想不努力就获得成功，无异于缘木求鱼。', '水中捞月;钻火得冰', '探囊取物;瓮中捉鳖'],
+'越俎代庖': ['yuè zǔ dài páo', '越过祭祀时放祭品的案子去代替厨师做饭。比喻超出自己职务范围去处理别人所管的事。', '《庄子·逍遥游》："庖人虽不治庖，尸祝不越樽俎而代之矣。"', '各部门各司其职就好，不要越俎代庖插手其他部门的事情。', '包办代替;大包大揽', '各司其职;各尽其责'],
+'运筹帷幄': ['yùn chóu wéi wò', '在军帐内对战略做全面计划。泛指筹划决策。', '《史记·高祖本纪》："夫运筹帷幄之中，决胜千里之外，吾不如子房。"', '教练运筹帷幄的策略布置，是球队获胜的关键。', '出谋划策;决胜千里', '一筹莫展;束手无策'],
+'崭露头角': ['zhǎn lù tóu jiǎo', '头上的角已明显地突出来了。指初显露出优异的才能。', '唐·韩愈《柳子厚墓志铭》："虽少年，已自成人，能取进士第，崭然见头角。"', '这位年轻科学家在学术会议上崭露头角，引起了广泛关注。', '脱颖而出;初露锋芒', '不露圭角;湮没无闻'],
+'振聋发聩': ['zhèn lóng fā kuì', '声音很大，使耳聋的人也听得见。比喻用语言文字唤醒糊涂麻木的人。', '清·袁枚《随园诗话补遗》卷一："此数言，振聋发聩，想当时必有迂儒曲士以经学谈诗者。"', '鲁迅先生的文字振聋发聩，唤醒了无数沉睡的国民。', '醍醐灌顶;当头棒喝', '愚弄视听;混淆黑白'],
+'纸上谈兵': ['zhǐ shàng tán bīng', '在纸面上谈论打仗。比喻空谈理论，不能解决实际问题。', '《史记·廉颇蔺相如列传》记载，赵括从小学习兵法，谈论起来头头是道，但上了战场一败涂地。', '这个方案看似完美，但只是纸上谈兵，完全不考虑实际操作的难度。', '夸夸其谈;坐而论道', '身体力行;脚踏实地'],
+'志同道合': ['zhì tóng dào hé', '志向相同，道路一致。形容彼此理想、志趣相合。', '《三国志·魏书·陈思王植传》："昔伊尹之为媵臣，至贱也，吕尚之处屠钓，至陋也，乃其见举于汤武、周文，诚道合志同。"', '找到几个志同道合的朋友一起创业，是人生一大幸事。', '意气相投;同声相应', '貌合神离;同床异梦'],
+'掷地有声': ['zhì dì yǒu shēng', '比喻文章文辞优美，语言铿锵有力。', '《晋书·孙绰传》："卿试掷地，当作金石声也。"', '他在发布会上的一番表态掷地有声，赢得了全场掌声。', '铿锵有力;金声玉振', '无声无息;有气无力'],
+'捉襟见肘': ['zhuō jīn jiàn zhǒu', '拉一下衣襟胳膊肘就露出来。形容衣服破烂。比喻顾此失彼，穷于应付。', '《庄子·让王》："曾子居卫……三日不举火，十年不制衣，正冠而缨绝，捉衿而肘见。"', '公司目前资金捉襟见肘，各项开支都需要精打细算。', '顾此失彼;力不从心', '绰绰有余;游刃有余'],
+'自惭形秽': ['zì cán xíng huì', '因为自己不如别人而感到惭愧。', '南朝·宋·刘义庆《世说新语·容止》："珠玉在侧，觉我形秽。"', '站在世界冠军旁边，他不禁有些自惭形秽。', '自愧不如;自叹不如', '趾高气扬;自命不凡'],
+'纵横捭阖': ['zòng héng bǎi hé', '指在政治或外交上运用手段进行分化或拉拢。', '《鬼谷子·捭阖》："捭阖者，天地之道。捭阖者，以变动阴阳，四时开闭，以化万物。"', '春秋战国时期，纵横家们纵横捭阖，在各诸侯国之间游说。', '运筹帷幄;翻云覆雨', '束手无策;无计可施'],
+'坐井观天': ['zuò jǐng guān tiān', '坐在井底看天。比喻眼界小，见识少。', '唐·韩愈《原道》："坐井而观天，曰天小者，非天小也。"', '只在这个小圈子里混，无异于坐井观天，外面的世界远比你想的精彩。', '管中窥豹;一孔之见', '见多识广;高瞻远瞩'],
+'买椟还珠': ['mǎi dú huán zhū', '买下木匣，退还了珍珠。比喻没有眼力，取舍不当。', '《韩非子·外储说左上》记载，楚国有个珠宝商到郑国卖珍珠，用木兰做了一个精美的盒子，郑国人买了盒子却把珍珠还给了商人。', '这个开发商花大价钱做了漂亮的售楼处，房子质量却很差，让购房者有买椟还珠之感。', '舍本逐末;本末倒置', '去粗取精;慧眼识珠'],
+'东施效颦': ['dōng shī xiào pín', '比喻盲目模仿，效果很坏。', '《庄子·天运》记载，美女西施因心痛而皱眉，邻居丑女东施觉得这样很美，也学着皱眉，结果更丑了。', '不是所有国外的成功经验都适合我们，盲目照搬只会东施效颦。', '邯郸学步;照猫画虎', '因材施教;独具匠心'],
+'对牛弹琴': ['duì niú tán qín', '比喻对蠢人谈论高深的道理，白费口舌。', '汉·牟融《理惑论》："公明仪为牛弹清角之操，伏食如故。非牛不闻，不合其耳矣。"', '跟完全不懂技术的人争论架构方案，简直是对牛弹琴。', '徒劳无功;问道于盲', '对症下药;醍醐灌顶'],
+'一叶障目': ['yī yè zhàng mù', '一片叶子挡住了眼睛。指看不到事物的全貌。', '《鹖冠子·天则》："一叶障目，不见泰山。"', '你为了这点小利益就放弃了大好机会，真是一叶障目，不见泰山。', '目光如豆;坐井观天', '洞若观火;高瞻远瞩'],
+'掩耳盗铃': ['yǎn ěr dào líng', '把耳朵捂住偷铃铛。比喻自己欺骗自己。', '《吕氏春秋·自知》记载，有人想偷一口钟，钟太大搬不动，就想把钟敲碎再搬走，又怕敲钟发出声音，于是捂住自己的耳朵去敲钟。', '公司业绩下滑却还在粉饰太平，不过是掩耳盗铃罢了。', '自欺欺人;掩目捕雀', '实事求是;开诚布公'],
+'亡羊补牢': ['wáng yáng bǔ láo', '羊丢失了再去修补羊圈。比喻出了问题以后想办法补救。', '《战国策·楚策四》："见兔而顾犬，未为晚也；亡羊而补牢，未为迟也。"', '虽然犯了一些错误，但亡羊补牢犹未为晚，现在改正还来得及。', '见兔顾犬;贼去关门', '防患未然;未雨绸缪'],
+'胸有成竹': ['xiōng yǒu chéng zhú', '原指画竹子时心里有一幅竹子的形象。后比喻做事之前已经有通盘的考虑。', '宋·苏轼《文与可画筼筜谷偃竹记》："故画竹，必先得成竹于胸中。"', '面对评委的提问，他胸有成竹，对答如流。', '心中有数;成竹在胸', '心中无数;不知所措'],
+'鹤发童颜': ['hè fà tóng yán', '白鹤羽毛般的头发，孩童般红润的面色。形容老年人气色好。', '唐·田颖《梦游罗浮》："自言非神亦非仙，鹤发童颜古无比。"', '这位老先生鹤发童颜，八十多岁还每天坚持锻炼。', '老当益壮;精神矍铄', '老态龙钟;风烛残年'],
+'画龙点睛': ['huà lóng diǎn jīng', '画龙之后再点上眼睛。比喻在关键地方简明扼要地点明要旨。', '唐·张彦远《历代名画记》记载，张僧繇在金陵安乐寺画了四条龙，都没有点眼睛，说点了就会飞走，人们不信，他点了一条龙的眼睛，顿时电闪雷鸣，龙破壁飞走。', '这篇散文的结尾是画龙点睛之笔，升华了整篇文章的主题。', '妙笔生花;锦上添花', '画蛇添足;多此一举'],
+'门可罗雀': ['mén kě luó què', '大门前面可以张网捕雀。形容十分冷落，宾客稀少。', '《史记·汲郑列传》："始翟公为廷尉，宾客阗门；及废，门外可设雀罗。"', '曾经火爆一时的商场如今门可罗雀，令人唏嘘。', '冷冷清清;无人问津', '门庭若市;络绎不绝'],
+'负荆请罪': ['fù jīng qǐng zuì', '背着荆条向对方请罪。表示向人认错赔罪。', '《史记·廉颇蔺相如列传》记载，廉颇不服蔺相如位在自己之上，后知错就背着荆条到蔺相如门前请罪。', '意识到自己误会了朋友，他决定负荆请罪，当面道歉。', '肉袒面缚;引咎自责', '文过饰非;死不认错'],
+};
+
+// ══════════════════════════════════════════════
+//  扩展词典（5000条，来源：中华新华字典数据库）
+//  格式: [成语, 拼音, 释义, 出处, 例句]
+// ══════════════════════════════════════════════
+let IDIOM_DICT_COMPACT=null;let IDIOM_DICT_COMPACT_FAILED=false;function loadCompactDict(){if(IDIOM_DICT_COMPACT)return Promise.resolve(IDIOM_DICT_COMPACT);if(IDIOM_DICT_COMPACT_FAILED)return Promise.reject(new Error('dict.json unavailable'));return fetch('dict.json').then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}).then(d=>{IDIOM_DICT_COMPACT=d;return d;}).catch(e=>{IDIOM_DICT_COMPACT_FAILED=true;console.error('加载扩展词典失败:',e);throw e;});}
+
+function loadDictCache() {
+  try { return JSON.parse(localStorage.getItem(DICT_CACHE_KEY)) || {}; } catch(e) { return {}; }
+}
+function saveDictCache(cache) {
+  try { localStorage.setItem(DICT_CACHE_KEY, JSON.stringify(cache)); } catch(e) {}
+}
+
+async function fetchWithTimeout(url, timeout = 8000) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeout);
+  try {
+    const resp = await fetch(url, { signal: ctrl.signal });
+    clearTimeout(timer);
+    return resp;
+  } catch(e) {
+    clearTimeout(timer);
+    throw e;
+  }
+}
+
+async function searchIdiom(word) {
+  var cache = loadDictCache();
+
+  // 1. 精品词典
+  if (IDIOM_DICT[word]) {
+    var parts = IDIOM_DICT[word];
+    var pinyin = parts[0], meaning = parts[1], source = parts[2], example = parts[3], synonyms = parts[4], antonyms = parts[5];
+    var result = {
+      word: word, pinyin: pinyin, meaning: meaning, source: source, example: example, found: true,
+      synonyms: synonyms ? synonyms.split(';').filter(Boolean) : [],
+      antonyms: antonyms ? antonyms.split(';').filter(Boolean) : [],
+    };
+    cache[word] = result;
+    saveDictCache(cache);
+    renderDictResult(result);
+    return result;
+  }
+
+  // 2. 在线缓存
+  if (cache[word]) { renderDictResult(cache[word]); return cache[word]; }
+
+  // 3. 扩展词典（按需加载）
+  try {
+    var dict = await loadCompactDict();
+    var compactEntry = dict.find(function(e) { return e[0] === word; });
+    if (compactEntry) {
+      var w = compactEntry[0], pinyin = compactEntry[1], meaning = compactEntry[2], source = compactEntry[3], example = compactEntry[4];
+      var result = { word: w, pinyin: pinyin, meaning: meaning, source: source, example: example, found: true, synonyms: [], antonyms: [] };
+      cache[word] = result;
+      saveDictCache(cache);
+      renderDictResult(result);
+      return result;
+    }
+  } catch(e) {
+    // dict.json 加载失败，回退到内置词典
+    renderDictResult({ word: word, found: false, error: '扩展词典加载失败，仅搜索内置词典' });
+    return { word: word, found: false };
+  }
+
+  // 4. 用户导入的成语列表
+  var importedEntry = idioms.find(function(e) { return e[0] === word; });
+  if (importedEntry) {
+    var result = { word: importedEntry[0], meaning: importedEntry[1], found: true, synonyms: [], antonyms: [] };
+    cache[word] = result;
+    saveDictCache(cache);
+    renderDictResult(result);
+    return result;
+  }
+
+  // 都没有
+  var notFound = { word: word, found: false };
+  renderDictResult(notFound);
+  return notFound;
+}
+
+function renderDictResult(data) {
+  const el = document.getElementById('searchResult');
+  if (data.error) {
+    el.innerHTML = `<div class="search-hint" style="color:var(--red);">⚠ ${data.error}
+      <br><span style="font-size:12px;color:var(--text3);">请检查 dict.json 是否在同一目录下</span>
+      <div style="margin-top:12px;">
+        <a href="https://baike.baidu.com/item/${encodeURIComponent(data.word)}" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:none;font-size:14px;">在百度百科中查看 →</a>
+      </div></div>`;
+    return;
+  }
+  if (!data.found) {
+    el.innerHTML = `<div class="search-hint">词典暂未收录「${data.word}」
+      <br><span style="font-size:12px;color:var(--text3);">可以试试其他成语</span>
+      <div style="margin-top:12px;">
+        <a href="https://baike.baidu.com/item/${encodeURIComponent(data.word)}" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:none;font-size:14px;">在百度百科中查看 →</a>
+      </div></div>`;
+    return;
+  }
+
+  let html = `<div class="dict-card">`;
+  html += `<div class="word-title">${data.word}</div>`;
+  if (data.pinyin) html += `<div class="pinyin">${data.pinyin}</div>`;
+  if (data.meaning || data.summary) {
+    html += `<div class="section"><div class="label">释义</div><div class="text">${data.meaning || data.summary}</div></div>`;
+  }
+  if (data.source) {
+    html += `<div class="section"><div class="label">出处</div><div class="text source">${data.source}</div></div>`;
+  }
+  if (data.example) {
+    html += `<div class="section"><div class="label">例句</div><div class="text">${data.example}</div></div>`;
+  }
+  if (data.synonyms && data.synonyms.length > 0) {
+    html += `<div class="section"><div class="label">近义词</div><div class="tag-row">`;
+    for (const s of data.synonyms) html += `<span class="tag syn">${s}</span>`;
+    html += `</div></div>`;
+  }
+  if (data.antonyms && data.antonyms.length > 0) {
+    html += `<div class="section"><div class="label">反义词</div><div class="tag-row">`;
+    for (const a of data.antonyms) html += `<span class="tag ant">${a}</span>`;
+    html += `</div></div>`;
+  }
+
+  html += `</div>`;
+  html += `<div style="text-align:center;margin-top:8px;"><span style="font-size:11px;color:var(--text3);">内置词典 · 共收录 ${Object.keys(IDIOM_DICT).length}+ 条成语</span></div>`;
+  el.innerHTML = html;
+}
+
+// ── Quiz ──
+let quizIdiomIdx = -1, quizAnswered = false;
+
+async function generateQuiz() {
+  if (idioms.length < 4) {
+    document.getElementById('question').innerHTML =
+      '<div class="big" style="font-size:20px;color:var(--text3);">需要至少 4 条成语</div>';
+    document.getElementById('options').innerHTML = '';
+    return;
+  }
+  quizAnswered = false;
+  document.getElementById('btnNextQ').disabled = true;
+  document.getElementById('feedback').textContent = '';
+
+  const pool = unknownSet.size >= 3 ? [...unknownSet] : idioms.map((_, i) => i);
+  quizIdiomIdx = pool[Math.floor(Math.random() * pool.length)];
+  const [word, correctMeaning] = idioms[quizIdiomIdx];
+
+  // 获取干扰项（可能是异步的如果触发了在线获取）
+  const distractorTexts = await getWrongOptions(quizIdiomIdx);
+
+  const options = [
+    { text: correctMeaning, isCorrect: true },
+    ...distractorTexts.map(t => ({ text: t, isCorrect: false })),
+  ];
+  shuffle(options);
+
+  document.getElementById('question').innerHTML =
+    `<div class="big">${word}</div><div class="sub">这个成语是什么意思？</div>`;
+  document.getElementById('options').innerHTML = options.map((o, i) =>
+    `<div class="option" data-i="${i}" data-correct="${o.isCorrect}">${o.text}</div>`
+  ).join('');
+  document.querySelectorAll('.option').forEach(el => {
+    el.addEventListener('click', () => handleQuizAnswer(el));
+  });
+}
+
+function handleQuizAnswer(el) {
+  if (quizAnswered) return;
+  quizAnswered = true;
+  const isCorrect = el.dataset.correct === 'true';
+  const all = document.querySelectorAll('.option');
+  all.forEach(o => o.style.pointerEvents = 'none');
+
+  if (isCorrect) {
+    el.classList.add('correct');
+    document.getElementById('feedback').innerHTML = '<span style="color:#34C759;">回答正确 ✓</span>';
+    if (unknownSet.has(quizIdiomIdx)) {
+      unknownSet.delete(quizIdiomIdx); saveProgress(); updateStats();
+    }
+  } else {
+    el.classList.add('wrong');
+    document.getElementById('feedback').innerHTML =
+      `<span style="color:#FF3B30;">回答错误</span><br>正确答案：<strong>${idioms[quizIdiomIdx][1]}</strong>`;
+    all.forEach(o => { if (o.dataset.correct === 'true') o.classList.add('correct'); });
+  }
+  document.getElementById('btnNextQ').disabled = false;
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}
+
+// ── Tabs ──
+function switchTab(name) {
+  document.querySelectorAll('.segment').forEach(s => s.classList.remove('active'));
+  document.querySelector(`.segment[data-tab="${name}"]`).classList.add('active');
+  ['learn','quiz','dict','import'].forEach(t =>
+    document.getElementById(`tab-${t}`).classList.toggle('hidden', t !== name));
+  if (name === 'quiz') generateQuiz();
+  if (name === 'import') updateImportCount();
+}
+
+function updateImportCount() { document.getElementById('importCount').textContent = idioms.length; }
+
+// ── Init ──
+async function init() {
+  loadIdioms(); loadProgress();
+  shuffledIndices = idioms.map((_, i) => i);
+
+  document.getElementById('cardWrap').addEventListener('click', () => {
+    document.getElementById('card').classList.toggle('flipped');
+  });
+
+  document.getElementById('btnKnown').addEventListener('click', () => {
+    const list = getReviewList();
+    if (!list.length) return;
+    const idx = list[currentIndex];
+    if (unknownSet.has(idx)) unknownSet.delete(idx); else unknownSet.add(idx);
+    saveProgress(); updateStats(); showCurrentCard();
+    toast(unknownSet.has(idx) ? '标为未掌握' : '已掌握 ✓');
+  });
+
+  document.getElementById('btnNext').addEventListener('click', () => {
+    const list = getReviewList();
+    if (!list.length) return;
+    currentIndex = (currentIndex + 1) % list.length;
+    showCurrentCard();
+  });
+
+  document.getElementById('btnShuffle').addEventListener('click', () => {
+    const list = getReviewList();
+    shuffle(list);
+    shuffledIndices = list;
+    currentIndex = 0;
+    showCurrentCard();
+    toast('已打乱 🔀');
+  });
+
+  document.getElementById('btnShowUnknown').addEventListener('click', function() {
+    if (currentMode === 'all') {
+      currentMode = 'unknown'; this.textContent = '查看全部';
+    } else {
+      currentMode = 'all'; this.textContent = '只看未掌握';
+    }
+    currentIndex = 0; showCurrentCard();
+  });
+
+  const btnReset = document.getElementById('btnReset');
+  if (btnReset) btnReset.addEventListener('click', () => {
+    if (confirm('将所有成语重新标记为「未掌握」？')) {
+      unknownSet = new Set(idioms.map((_, i) => i)); saveProgress();
+      currentIndex = 0; currentMode = 'all';
+      document.getElementById('btnShowUnknown').textContent = '只看未掌握';
+      showCurrentCard(); toast('已重置');
+    }
+  });
+
+  // Quiz buttons
+  document.getElementById('btnNextQ').addEventListener('click', generateQuiz);
+  document.getElementById('btnNewQuiz').addEventListener('click', generateQuiz);
+
+  // Import buttons
+  document.getElementById('btnImport').addEventListener('click', async () => {
+    const parsed = await parseImport(document.getElementById('importText').value);
+    if (!parsed.length) { toast('未识别到成语'); return; }
+    if (!confirm(`识别到 ${parsed.length} 条，将替换现有 ${idioms.length} 条。确定？`)) return;
+    idioms = parsed;
+    unknownSet = new Set(idioms.map((_, i) => i));
+    saveIdioms(); saveProgress();
+    shuffledIndices = idioms.map((_, i) => i);
+    currentIndex = 0; currentMode = 'all';
+    document.getElementById('btnShowUnknown').textContent = '只看未掌握';
+    document.getElementById('importText').value = '';
+    updateImportCount(); showCurrentCard();
+    toast(`已导入 ${parsed.length} 条`);
+    prefetchAllOnline();  // 为新词联网查找易错释义
+  });
+
+  document.getElementById('btnAppend').addEventListener('click', async () => {
+    const parsed = await parseImport(document.getElementById('importText').value);
+    if (!parsed.length) { toast('未识别到成语'); return; }
+    const start = idioms.length;
+    idioms.push(...parsed);
+    for (let i = start; i < idioms.length; i++) unknownSet.add(i);
+    saveIdioms(); saveProgress();
+    shuffledIndices = idioms.map((_, i) => i);
+    document.getElementById('importText').value = '';
+    updateImportCount();
+    toast(`追加 ${parsed.length} 条`);
+    prefetchAllOnline();  // 为新词联网查找易错释义
+  });
+
+  document.getElementById('btnExport').addEventListener('click', () => {
+    let text = '';
+    const order = shuffledIndices.length === idioms.length ? shuffledIndices : idioms.map((_, i) => i);
+    for (const i of order) text += `${idioms[i][0]}  ${idioms[i][1]}\n`;
+    navigator.clipboard.writeText(text).then(() => toast('已复制到剪贴板'));
+  });
+
+  document.getElementById('btnClear').addEventListener('click', () => {
+    if (!confirm('清空所有成语？建议先导出备份。')) return;
+    idioms = []; unknownSet = new Set(); shuffledIndices = [];
+    saveIdioms(); saveProgress();
+    currentIndex = 0;
+    document.getElementById('importText').value = '';
+    updateImportCount(); showCurrentCard();
+    toast('已清空');
+  });
+
+  document.querySelectorAll('.segment').forEach(s =>
+    s.addEventListener('click', () => switchTab(s.dataset.tab)));
+
+  // Dictionary search (Enter is handled by autocomplete keydown below)
+  document.getElementById('btnSearch').addEventListener('click', () => {
+    const word = document.getElementById('searchInput').value.trim();
+    if (word) searchIdiom(word).catch(e => console.error('搜索失败:', e));
+  });
+
+  // Keyboard
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'TEXTAREA') return;
+    if (e.key === ' ') { e.preventDefault();
+      document.getElementById('card').classList.toggle('flipped'); }
+    else if (e.key === 'ArrowRight') document.getElementById('btnNext').click();
+    else if (e.key === 'ArrowLeft') {
+      const list = getReviewList();
+      if (list.length) { currentIndex = (currentIndex - 1 + list.length) % list.length; showCurrentCard(); }
+    }
+  });
+
+  updateImportCount();
+  showCurrentCard();
+
+  // 后台预取网络释义
+  prefetchAllOnline();
+
+  // ═══════════════════════════════════════════════════
+  //  暗色模式
+  // ═══════════════════════════════════════════════════
+  const btnTheme = document.getElementById('btnTheme');
+  function applyTheme(dark) {
+    if (dark) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      btnTheme.textContent = '☀️';
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      btnTheme.textContent = '🌙';
+    }
+  }
+  const savedTheme = localStorage.getItem('jichengyu_theme');
+  applyTheme(savedTheme === 'dark');
+  btnTheme.addEventListener('click', () => {
+    const isDark = document.documentElement.hasAttribute('data-theme');
+    applyTheme(!isDark);
+    localStorage.setItem('jichengyu_theme', !isDark ? 'dark' : 'light');
+  });
+
+  // ═══════════════════════════════════════════════════
+  //  搜索自动补全
+  // ═══════════════════════════════════════════════════
+  const searchInput = document.getElementById('searchInput');
+  const suggestionsEl = document.getElementById('searchSuggestions');
+  let suggestionIdx = -1;
+
+  function getSuggestions(query) {
+    if (!query || query.length < 1) return [];
+    const results = [];
+    const seen = new Set();
+    // 内置词典
+    for (const key of Object.keys(IDIOM_DICT)) {
+      if (key.startsWith(query) && !seen.has(key)) {
+        seen.add(key);
+        results.push({ word: key, pinyin: IDIOM_DICT[key][0] });
+      }
+    }
+    // 扩展词典（如果已加载）
+    if (IDIOM_DICT_COMPACT) {
+      for (const entry of IDIOM_DICT_COMPACT) {
+        const key = entry[0];
+        if (key.startsWith(query) && !seen.has(key)) {
+          seen.add(key);
+          results.push({ word: key, pinyin: entry[1] || '' });
+        }
+        if (results.length >= 20) break;
+      }
+    }
+    return results.slice(0, 8);
+  }
+
+  function showSuggestions(suggestions) {
+    if (!suggestions.length) {
+      suggestionsEl.classList.remove('show');
+      return;
+    }
+    suggestionIdx = -1;
+    let html = '';
+    for (let i = 0; i < suggestions.length; i++) {
+      const s = suggestions[i];
+      html += `<div class="item" data-idx="${i}" data-word="${s.word}">
+        <span class="word">${s.word}</span>
+        <span class="py">${s.pinyin}</span>
+      </div>`;
+    }
+    suggestionsEl.innerHTML = html;
+    suggestionsEl.classList.add('show');
+    // 点击事件
+    suggestionsEl.querySelectorAll('.item').forEach(item => {
+      item.addEventListener('mousedown', e => {
+        e.preventDefault();
+        const word = item.dataset.word;
+        searchInput.value = word;
+        suggestionsEl.classList.remove('show');
+        searchIdiom(word).catch(e => console.error('搜索失败:', e));
+      });
+    });
+  }
+
+  searchInput.addEventListener('input', () => {
+    const query = searchInput.value.trim();
+    const suggestions = getSuggestions(query);
+    showSuggestions(suggestions);
+  });
+
+  searchInput.addEventListener('keydown', e => {
+    const items = suggestionsEl.querySelectorAll('.item');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (items.length === 0) return;
+      suggestionIdx = Math.min(suggestionIdx + 1, items.length - 1);
+      items.forEach((item, i) => item.classList.toggle('active', i === suggestionIdx));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (items.length === 0) return;
+      suggestionIdx = Math.max(suggestionIdx - 1, 0);
+      items.forEach((item, i) => item.classList.toggle('active', i === suggestionIdx));
+    } else if (e.key === 'Enter') {
+      if (suggestionIdx >= 0 && items[suggestionIdx]) {
+        e.preventDefault();
+        const word = items[suggestionIdx].dataset.word;
+        searchInput.value = word;
+        suggestionsEl.classList.remove('show');
+        searchIdiom(word).catch(e => console.error('搜索失败:', e));
+      } else {
+        // No suggestion selected, do plain search
+        const word = searchInput.value.trim();
+        if (word) searchIdiom(word).catch(e => console.error('搜索失败:', e));
+      }
+    } else if (e.key === 'Escape') {
+      suggestionsEl.classList.remove('show');
+    }
+  });
+
+  searchInput.addEventListener('blur', () => {
+    setTimeout(() => suggestionsEl.classList.remove('show'), 150);
+  });
+
+  searchInput.addEventListener('focus', () => {
+    const query = searchInput.value.trim();
+    if (query) {
+      const suggestions = getSuggestions(query);
+      showSuggestions(suggestions);
+    } else {
+      renderSearchHistory();
+    }
+  });
+
+  // ═══════════════════════════════════════════════════
+  //  搜索历史
+  // ═══════════════════════════════════════════════════
+  const HISTORY_KEY = 'jichengyu_search_history';
+  const MAX_HISTORY = 10;
+
+  function loadSearchHistory() {
+    try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
+    catch(e) { return []; }
+  }
+
+  function saveSearchHistory(history) {
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history)); }
+    catch(e) {}
+  }
+
+  function addSearchHistory(word) {
+    let history = loadSearchHistory();
+    history = history.filter(w => w !== word);
+    history.unshift(word);
+    if (history.length > MAX_HISTORY) history = history.slice(0, MAX_HISTORY);
+    saveSearchHistory(history);
+  }
+
+  function renderSearchHistory() {
+    const history = loadSearchHistory();
+    const wrap = document.getElementById('searchHistory');
+    const tagsEl = document.getElementById('historyTags');
+    if (!history.length) { wrap.style.display = 'none'; return; }
+    wrap.style.display = 'block';
+    let html = '';
+    for (const word of history) {
+      html += `<span class="history-tag" data-word="${word}">${word}</span>`;
+    }
+    tagsEl.innerHTML = html;
+    tagsEl.querySelectorAll('.history-tag').forEach(tag => {
+      tag.addEventListener('click', () => {
+        const word = tag.dataset.word;
+        searchInput.value = word;
+        searchIdiom(word).catch(e => console.error('搜索失败:', e));
+      });
+    });
+  }
+
+  document.getElementById('btnClearHistory').addEventListener('click', () => {
+    localStorage.removeItem(HISTORY_KEY);
+    document.getElementById('searchHistory').style.display = 'none';
+  });
+
+  // 包装原始 searchIdiom，添加历史记录
+  const _originalSearchIdiom = searchIdiom;
+  searchIdiom = async function(word) {
+    addSearchHistory(word);
+    renderSearchHistory();
+    return await _originalSearchIdiom(word);
+  };
+
+  // 初始化搜索历史
+  renderSearchHistory();
+}
+
+init();
+</script>
+</body>
+</html>
